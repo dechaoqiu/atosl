@@ -1,33 +1,30 @@
-/*/struct load_command
-{
-    uint32_t cmd;
-    uint32_t cmdsize;
-};
+#include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
+#include "mach-o/loader.h"
 
-struct segment_command
-{
-    uint32_t cmd;
-    uint32_t cmdsize;
-    char segname[16];
-    uint32_t vmaddr;
-    uint32_t vmsize;
-    uint32_t fileoff;
-    uint32_t filesize;
-    vm_prot_t maxprot;
-    vm_prot_t initprot;
-    uint32_t nsects;
-    uint32_t flags;
+struct data_of_interest{
+    uint32_t text_vmaddr;
 };
-
-struct mach_header
-{
-    uint32_t magic;
-    cpu_type_t cputype;
-    cpu_subtype_t cpusubtype;
-    uint32_t filetype;
-    uint32_t ncmds;
-    uint32_t sizeofcmds;
-    uint32_t flags;
-};
-*/
 int parse_macho(const char *filename);
+int process_lc_uuid(FILE *fp, long offset);
+int process_lc_segment(FILE *fp, long offset);
+int process_lc_sub_client(FILE *fp, long offset);
+int process_lc_sub_library(FILE *fp, long offset);
+int process_lc_sub_umbrella(FILE *fp, long offset);
+int process_lc_sub_framework(FILE *fp, long offset);
+int process_lc_twolevel_hints(FILE *fp, long offset);
+int process_lc_routines_64(FILE *fp, long offset);
+int process_lc_routines(FILE *fp, long offset);
+int process_lc_id_dylinker(FILE *fp, long offset);
+int process_lc_load_dylinker(FILE *fp, long offset);
+int process_lc_prebound_dylib(FILE *fp, long offset);
+int process_lc_id_dylib(FILE *fp, long offset);
+int process_lc_load_dylib(FILE *fp, long offset);
+int process_lc_thread(FILE *fp, long offset);
+int process_lc_unixthread(FILE *fp, long offset);
+int process_lc_dysymtab(FILE *fp, long offset);
+int process_lc_symtab(FILE *fp, long offset);
+int process_lc_segment_64(FILE *fp, long offset);
+int process_lc_data_in_code(FILE *fp, long offset);
+int process_lc_function_starts(FILE *fp, long offset);
