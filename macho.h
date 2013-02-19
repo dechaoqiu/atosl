@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-#include "mach-o/loader.h"
+#include "loader.h"
 
 struct data_of_interest{
     uint32_t text_vmaddr;

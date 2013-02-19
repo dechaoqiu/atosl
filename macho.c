@@ -54,7 +54,7 @@ int parse_macho(const char *filename){
     int num_load_cmds = 0;
     if( (rc = fread(&mh ,sizeof(struct mach_header), 1, fp)) != 0 )
     {
-        printf("sizeof struct mach_header: %lu\n", sizeof(struct mach_header));
+        printf("sizeof struct mach_header: %u\n", sizeof(struct mach_header));
         printf("magic: %u\n", mh.magic);
         printf("cputype: %u\n", mh.cputype);
         printf("cpusubtype: %u\n", mh.cpusubtype);
@@ -335,7 +335,7 @@ int process_lc_load_dylinker(FILE *fp, long offset){
         printf("record count: %d\n", rc);
         printf("cmd: %u\n", command.cmd);
         printf("cmdsize: %u\n", command.cmdsize);
-        printf("dylinker_command: %lu\n", sizeof(struct dylinker_command));
+        printf("dylinker_command: %u\n", sizeof(struct dylinker_command));
     }
     printf("\n");
     seekreturn = fseek(fp, (command.cmdsize - sizeof(struct dylinker_command)), SEEK_CUR);
