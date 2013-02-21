@@ -10,7 +10,7 @@
  *       Revision:  none
  *       Compiler:  gcc
  *
- *         Author:  YOUR NAME (), 
+ *         Author:  Reno Qiu
  *   Organization:  
  *
  * =====================================================================================
@@ -39,6 +39,246 @@ struct lc_data_in_code
 //};
 //
 struct data_of_interest doi = {0};
+
+struct section *dwarf_section_headers = NULL;
+
+struct dwarf_sections{
+    unsigned char *dwarf_info_section;
+    unsigned char *dwarf_abbrev_section;
+    unsigned char *dwarf_line_section;
+    unsigned char *dwarf_pubnames_section;
+    unsigned char *dwarf_aranges_section;
+    unsigned char *dwarf_loc_section;
+    unsigned char *dwarf_macinfo_section;
+    unsigned char *dwarf_str_section;
+    unsigned char *dwarf_ranges_section;
+    unsigned char *dwarf_inlined_section;
+    unsigned char *dwarf_pubtypes_section;
+    unsigned char *dwarf_frame_section;
+    unsigned char *dwarf_eh_frame_section;
+
+    int dwarf_info_section_size;
+    int dwarf_abbrev_section_size;
+    int dwarf_line_section_size;
+    int dwarf_pubnames_section_size;
+    int dwarf_aranges_section_size;
+    int dwarf_loc_section_size;
+    int dwarf_macinfo_section_size;
+    int dwarf_str_section_size;
+    int dwarf_ranges_section_size;
+    int dwarf_inlined_section_size;
+    int dwarf_pubtypes_section_size;
+    int dwarf_frame_section_size;
+    int dwarf_eh_frame_section_size;
+};
+struct dwarf_sections dwarf_sections = {0};
+uint32_t numofdwarfsections = 0;
+void free_dwarf_sections(){
+    //uint32_t i = 0;
+    //while(i < numofdwarfsections){
+    //    free(dwarf_sections[i]);
+    //    i++;
+    //}
+    if(dwarf_sections.dwarf_info_section){
+        free(dwarf_sections.dwarf_info_section); 
+    }
+    if(dwarf_sections.dwarf_abbrev_section){
+        free(dwarf_sections.dwarf_abbrev_section); 
+    }
+    if(dwarf_sections.dwarf_line_section){
+        free(dwarf_sections.dwarf_line_section); 
+    }
+    if(dwarf_sections.dwarf_pubnames_section){
+        free(dwarf_sections.dwarf_pubnames_section); 
+    }
+    if(dwarf_sections.dwarf_aranges_section){
+        free(dwarf_sections.dwarf_aranges_section); 
+    }
+    if(dwarf_sections.dwarf_loc_section){
+        free(dwarf_sections.dwarf_loc_section); 
+    }
+    if(dwarf_sections.dwarf_macinfo_section){
+        free(dwarf_sections.dwarf_macinfo_section); 
+    }
+    if(dwarf_sections.dwarf_str_section){
+        free(dwarf_sections.dwarf_str_section); 
+    }
+    if(dwarf_sections.dwarf_ranges_section){
+        free(dwarf_sections.dwarf_ranges_section); 
+    }
+    if(dwarf_sections.dwarf_inlined_section){
+        free(dwarf_sections.dwarf_inlined_section); 
+    }
+    if(dwarf_sections.dwarf_pubtypes_section){
+        free(dwarf_sections.dwarf_pubtypes_section); 
+    }
+    if(dwarf_sections.dwarf_frame_section){
+        free(dwarf_sections.dwarf_frame_section); 
+    }
+    if(dwarf_sections.dwarf_eh_frame_section){
+        free(dwarf_sections.dwarf_eh_frame_section); 
+    }
+
+    free(dwarf_section_headers);
+    //todo
+    //free();
+}
+int parse_dwarf_segment(FILE* fp, struct segment_command *command){
+    numofdwarfsections = command->nsects;
+    dwarf_section_headers = malloc(numofdwarfsections * sizeof(struct section));
+    memset(dwarf_section_headers, '\0', numofdwarfsections * sizeof (struct section));
+    int rc = 0;
+    uint32_t i = 0;
+    long current_pos = ftell (fp);
+    while(i < numofdwarfsections){
+        if( (rc = fread(&(dwarf_section_headers[i]) ,sizeof(struct section), 1, fp)) != 0 ){
+            printf("%s %s\n", dwarf_section_headers[i].segname, dwarf_section_headers[i].sectname); 
+            //dwarf_sections.dwarf_info_section
+            unsigned char *temp = malloc(dwarf_section_headers[i].size);
+            if (temp == NULL){
+                printf("Malloc Error!\n");
+                return -1;
+            }
+            //memset(dwarf_sections.dwarf_info_section, '\0', dwarf_section_headers[i].size);
+            memset(temp, '\0', dwarf_section_headers[i].size);
+
+            long temp_position = ftell(fp);
+            fseek(fp, dwarf_section_headers[i].offset, SEEK_SET);
+            int numofbytes = fread(temp, sizeof(char), dwarf_section_headers[i].size, fp);
+            assert(numofbytes == dwarf_section_headers[i].size);
+
+            fseek(fp, temp_position, SEEK_SET);
+            printf("SEEKSET: %d\n", SEEK_SET);
+            //todo asset
+
+            if(strcmp(dwarf_section_headers[i].sectname, "__debug_abbrev") == 0){ 
+                dwarf_sections.dwarf_abbrev_section = temp;
+                dwarf_sections.dwarf_abbrev_section_size = dwarf_section_headers[i].size;
+            }else if(strcmp(dwarf_section_headers[i].sectname, "__debug_aranges") == 0){
+                dwarf_sections.dwarf_aranges_section = temp;
+                dwarf_sections.dwarf_aranges_section_size = dwarf_section_headers[i].size;
+            }else if(strcmp(dwarf_section_headers[i].sectname, "__debug_info") == 0){
+                dwarf_sections.dwarf_info_section = temp;
+                dwarf_sections.dwarf_info_section_size = dwarf_section_headers[i].size;
+            }else if(strcmp(dwarf_section_headers[i].sectname, "__debug_inlined") == 0){
+                dwarf_sections.dwarf_inlined_section = temp;
+                dwarf_sections.dwarf_inlined_section_size = dwarf_section_headers[i].size;
+            }else if(strcmp(dwarf_section_headers[i].sectname, "__debug_line") == 0){
+                dwarf_sections.dwarf_line_section = temp;
+                dwarf_sections.dwarf_line_section_size = dwarf_section_headers[i].size;
+            }else if(strcmp(dwarf_section_headers[i].sectname, "__debug_loc") == 0){
+                dwarf_sections.dwarf_loc_section = temp;
+                dwarf_sections.dwarf_loc_section_size = dwarf_section_headers[i].size;
+            }else if((strcmp(dwarf_section_headers[i].sectname, "__debug_pubnames") == 0) ||
+                    (strcmp(dwarf_section_headers[i].sectname, "__debug_pubnames__DWARF") == 0)
+                    ){
+                dwarf_sections.dwarf_pubnames_section = temp;
+                dwarf_sections.dwarf_pubnames_section_size = dwarf_section_headers[i].size;
+            }else if((strcmp(dwarf_section_headers[i].sectname, "__debug_pubtypes") == 0) ||
+                    (strcmp(dwarf_section_headers[i].sectname, "__debug_pubtypes__DWARF") == 0) 
+                    ){
+                dwarf_sections.dwarf_pubtypes_section = temp;
+                dwarf_sections.dwarf_pubtypes_section_size = dwarf_section_headers[i].size;
+            }else if(strcmp(dwarf_section_headers[i].sectname, "__debug_ranges") == 0){
+                dwarf_sections.dwarf_ranges_section = temp;
+                dwarf_sections.dwarf_ranges_section_size = dwarf_section_headers[i].size;
+            }else if(strcmp(dwarf_section_headers[i].sectname, "__debug_str") == 0){
+                dwarf_sections.dwarf_str_section = temp;
+                dwarf_sections.dwarf_str_section_size = dwarf_section_headers[i].size;
+            }else if(strcmp(dwarf_section_headers[i].sectname, "__apple_names") == 0){
+                //dwarf_sections.dwarf_abbrev_section = temp;
+            }else if(strcmp(dwarf_section_headers[i].sectname, "__apple_types") == 0){
+                //dwarf_sections.dwarf_abbrev_section = temp;
+            }else if((strcmp(dwarf_section_headers[i].sectname, "__apple_namespa") == 0) ||
+                    (strcmp(dwarf_section_headers[i].sectname, "__apple_namespac__DWARF") == 0) 
+                    ){
+                //dwarf_sections.dwarf_abbrev_section = temp;
+            }else if(strcmp(dwarf_section_headers[i].sectname, "__apple_objc") == 0){
+                //dwarf_sections.dwarf_abbrev_section = temp;
+            }else{
+                printf("╮(╯▽╰)╭, %s \n", dwarf_section_headers[i].sectname);
+                free(temp);
+            }
+        }
+        rc = 0;
+        i++;
+    }
+    int seekreturn = 0;
+    seekreturn = fseek (fp, current_pos, SEEK_SET); 
+    assert(seekreturn == 0);
+}
+
+void print_all_dwarf_sections(){
+    int i = 0;
+    for (i =0; i< dwarf_sections.dwarf_abbrev_section_size; i++){
+        printf("%02x", dwarf_sections.dwarf_abbrev_section[i]);
+    }
+    printf("\n");
+    printf("\n");
+
+    for (i =0; i< dwarf_sections.dwarf_aranges_section_size; i++){
+        printf("%02x", dwarf_sections.dwarf_aranges_section[i]);
+
+    }
+    printf("\n");
+    printf("\n");
+
+    for (i =0; i< dwarf_sections.dwarf_info_section_size; i++){
+        printf("%02x", dwarf_sections.dwarf_info_section[i]);
+
+    }
+    printf("\n");
+    printf("\n");
+
+    for (i =0; i< dwarf_sections.dwarf_inlined_section_size; i++){
+        printf("%02x", dwarf_sections.dwarf_inlined_section[i]);
+
+    }
+    printf("\n");
+    printf("\n");
+
+    for (i =0; i< dwarf_sections.dwarf_line_section_size; i++){
+        printf("%02x", dwarf_sections.dwarf_line_section[i]);
+
+    }
+    printf("\n");
+    printf("\n");
+
+    for (i =0; i< dwarf_sections.dwarf_loc_section_size; i++){
+        printf("%02x", dwarf_sections.dwarf_loc_section[i]);
+
+    }
+    printf("\n");
+    printf("\n");
+
+    for (i =0; i< dwarf_sections.dwarf_pubnames_section_size; i++){
+        printf("%02x", dwarf_sections.dwarf_pubnames_section[i]);
+
+    }
+    printf("\n");
+    printf("\n");
+
+    for (i =0; i< dwarf_sections.dwarf_pubtypes_section_size; i++){
+        printf("%02x", dwarf_sections.dwarf_pubtypes_section[i]);
+
+    }
+    printf("\n");
+    printf("\n");
+
+    for (i =0; i< dwarf_sections.dwarf_ranges_section_size; i++){
+        printf("%02x", dwarf_sections.dwarf_ranges_section[i]);
+
+    }
+    printf("\n");
+    printf("\n");
+
+    for (i =0; i< dwarf_sections.dwarf_str_section_size; i++){
+        printf("%02x", dwarf_sections.dwarf_str_section[i]);
+
+    }
+    printf("\n");
+    printf("\n");
+}
 
 int parse_macho(const char *filename){
     FILE *fp = fopen(filename, "rb");
@@ -86,7 +326,198 @@ int parse_macho(const char *filename){
     }
      
     fclose(fp);
+    //print_all_dwarf_sections();
+    parse_dwarf_sections();
     return 0; 
+}
+
+
+/*  This data structure holds the information of an abbrev. */
+struct abbrev_info
+{
+    unsigned int number;    /*  number identifying abbrev */
+    enum dwarf_tag tag;     /*  dwarf tag */
+    unsigned short has_children;        /*  boolean */
+    unsigned short num_attrs;   /*  number of attributes */
+    struct attr_abbrev *attrs;  /*  an array of attribute descriptions */
+    struct abbrev_info *next;   /*  next in chain */
+};
+
+struct attr_abbrev
+{
+    enum dwarf_attribute name; 
+    enum dwarf_form form; 
+};
+
+
+signed long long 
+decode_signed_leb128(unsigned char* leb128, unsigned long* leb128_length)
+{
+    signed long long number = 0;
+    int sign = 0;
+    signed long shift = 0;
+    unsigned char byte = *leb128;
+    signed long byte_length = 1;
+
+    /*  byte_length being the number of bytes of data absorbed so far in 
+     *         turning the leb into a Dwarf_Signed. */
+
+    for (;;) {
+        sign = byte & 0x40;
+        number |= ((signed long long) ((byte & 0x7f))) << shift;
+        shift += 7;
+
+        if ((byte & 0x80) == 0) {
+            break;
+        }
+        ++leb128;
+        byte = *leb128;
+        byte_length++;
+    }
+
+    if ((shift < sizeof(signed long long) * 8) && sign) {
+        number |= -((signed long long) 1 << shift);
+    }
+
+    if (leb128_length != NULL)
+        *leb128_length = byte_length;
+    return (number);
+}
+
+unsigned long long
+decode_unsigned_leb128(unsigned char* leb128, unsigned long* leb128_length)
+{
+    unsigned char byte;
+    unsigned long word_number;
+    unsigned long long number;
+    signed long shift;
+    signed long byte_length;
+
+    /*  The following unrolls-the-loop for the first few bytes and
+     *  unpacks into 32 bits to make this as fast as possible.
+     *  word_number is assumed big enough that the shift has a defined
+     *  result. */
+    if ((*leb128 & 0x80) == 0) {
+        if (leb128_length != NULL)
+            *leb128_length = 1;
+        return (*leb128);
+    } else if ((*(leb128 + 1) & 0x80) == 0) {
+        if (leb128_length != NULL)
+            *leb128_length = 2;
+
+        word_number = *leb128 & 0x7f;
+        word_number |= (*(leb128 + 1) & 0x7f) << 7;
+        return (word_number);
+    } else if ((*(leb128 + 2) & 0x80) == 0) {
+        if (leb128_length != NULL)
+            *leb128_length = 3;
+
+        word_number = *leb128 & 0x7f;
+        word_number |= (*(leb128 + 1) & 0x7f) << 7;
+        word_number |= (*(leb128 + 2) & 0x7f) << 14;
+        return (word_number);
+    } else if ((*(leb128 + 3) & 0x80) == 0) {
+        if (leb128_length != NULL)
+            *leb128_length = 4;
+
+        word_number = *leb128 & 0x7f;
+        word_number |= (*(leb128 + 1) & 0x7f) << 7;
+        word_number |= (*(leb128 + 2) & 0x7f) << 14;
+        word_number |= (*(leb128 + 3) & 0x7f) << 21;
+        return (word_number);
+    }
+
+    /*  The rest handles long numbers Because the 'number' may be larger 
+     *  than the default int/unsigned, we must cast the 'byte' before
+     *  the shift for the shift to have a defined result. */
+    number = 0;
+    shift = 0;
+    byte_length = 1;
+    byte = *(leb128);
+    for (;;) {
+        number |= ((unsigned int) (byte & 0x7f)) << shift;
+
+        if ((byte & 0x80) == 0) {
+            if (leb128_length != NULL)
+                *leb128_length = byte_length;
+            return (number);
+        }
+        shift += 7;
+
+        byte_length++;
+        ++leb128;
+        byte = *leb128;
+    }
+}
+unsigned int get_num_attr_spec_pair(unsigned char* current_abbrev_pos){
+    unsigned int num_attr_spec_pair = 0;
+    unsigned long length = 0;
+    unsigned int attr_name_code = decode_unsigned_leb128(current_abbrev_pos ,&length);
+    unsigned long long attr_form_code = decode_unsigned_leb128(current_abbrev_pos ,&length);
+    while (*current_abbrev_pos != '\0' || *(current_abbrev_pos+ 1) != '\0'){
+        num_attr_spec_pair ++;
+        current_abbrev_pos += 2;
+    }
+    return num_attr_spec_pair;
+}
+
+void parse_dwarf_abbrev(){
+    unsigned char * current_abbrev_pos = dwarf_sections.dwarf_abbrev_section;
+    int size = dwarf_sections.dwarf_abbrev_section_size;
+    unsigned char temp = 0;
+    unsigned long length = 0;
+    unsigned long long abbrev_code = decode_unsigned_leb128(current_abbrev_pos, &length);
+    printf("%llu %lu\n", abbrev_code, length);
+    current_abbrev_pos += length;
+    unsigned long long entry_code = decode_unsigned_leb128(current_abbrev_pos, &length);
+    printf("%llu\n", entry_code);
+    current_abbrev_pos += length;
+    unsigned char has_children = *current_abbrev_pos;
+    printf("%u\n", has_children);
+    current_abbrev_pos ++;
+//    unsigned int num_attr_spec_pair = 0;
+//    num_attr_spec_pair = get_num_attr_spec_pair(current_abbrev_pos);
+//    printf("num_attr_spec_pair: %d\n", num_attr_spec_pair);
+//
+    unsigned int attr_name_code = (unsigned int)decode_unsigned_leb128(current_abbrev_pos, &length);
+    current_abbrev_pos += length;
+    unsigned int attr_form_code = (unsigned int)decode_unsigned_leb128(current_abbrev_pos, &length);
+    current_abbrev_pos += length;
+    while(attr_name_code != 0 || attr_form_code != 0){
+        struct attr_abbrev* attr = malloc(sizeof(struct attr_abbrev)); 
+        memset(attr, '\0', sizeof(struct attr_abbrev));
+        attr->name = attr_name_code;
+        attr->form = attr_form_code;
+        printf("%02X ", attr->name);
+        printf("%02X", attr->form);
+        printf("\n");
+        printf("%s %s\n", dwarf_attr_name(attr->name), dwarf_attr_name(attr->form));
+        attr_name_code = (unsigned int)decode_unsigned_leb128(current_abbrev_pos ,&length);
+        current_abbrev_pos += length;
+        attr_form_code = (unsigned int)decode_unsigned_leb128(current_abbrev_pos ,&length);
+        current_abbrev_pos += length;
+    }
+
+//struct abbrev_info
+//{
+//    unsigned int number;    /*  number identifying abbrev */
+//    enum dwarf_tag tag;     /*  dwarf tag */
+//    unsigned short has_children;        /*  boolean */
+//    unsigned short num_attrs;   /*  number of attributes */
+//    struct attr_abbrev *attrs;  /*  an array of attribute descriptions */
+//    struct abbrev_info *next;   /*  next in chain */
+//};
+//
+//struct attr_abbrev
+//{
+//    enum dwarf_attribute name; 
+//    enum dwarf_form form; 
+//};
+
+}
+
+int parse_dwarf_sections(){
+    parse_dwarf_abbrev();
 }
 
 int parse_load_command(FILE *fp, struct load_command *lcp){
@@ -265,6 +696,12 @@ int process_lc_segment(FILE *fp, long offset){
         printf("vmaddr: 0x%x\n", command.vmaddr);
         if(strcmp(command.segname, "__TEXT") == 0){
             doi.text_vmaddr = command.vmaddr;
+        }
+        if(strcmp(command.segname, "__DWARF") == 0){
+            printf("__DWARF File\n");
+            parse_dwarf_segment(fp, &command);
+            //todo seek_back
+            return 0;
         }
     }
     printf("\n");

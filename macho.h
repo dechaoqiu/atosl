@@ -1,7 +1,10 @@
 #include <stdio.h>
+#include <string.h>
 #include <stdlib.h>
 #include <assert.h>
 #include "loader.h"
+#include "dwarf2.h"
+#include "converter.h"
 
 struct data_of_interest{
     uint32_t text_vmaddr;

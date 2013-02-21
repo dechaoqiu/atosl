@@ -23,7 +23,8 @@ extern struct data_of_interest doi;
 int main(int argc, char *argv[]){
     printf("Start Reading Mach-O File Format\n");
     //parse_macho("/Users/Reno/Quincy/local/QuincyDemo_1_0/QuincyDemo2.app/QuincyDemo");
-    parse_macho("/home/reno/Downloads/QuincyDemo2.app/QuincyDemo");
+    //parse_macho("/home/reno/Downloads/QuincyDemo2.app/QuincyDemo");
+    parse_macho("/home/reno/Downloads/QuincyDemo.app.dSYM/Contents/Resources/DWARF/QuincyDemo");
     printf("vmaddr for text segment: 0x%x\n", doi.text_vmaddr);
 }
 
