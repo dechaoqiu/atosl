@@ -225,8 +225,7 @@ char* dwarf_attr_name (unsigned int attr)
 
 /* Convert a DWARF value form code into its string name.  */
 
-static char *
-dwarf_form_name (unsigned form)
+char * dwarf_form_name (unsigned form)
 {
   switch (form)
     {
@@ -272,10 +271,142 @@ dwarf_form_name (unsigned form)
       return "DW_FORM_ref_udata";
     case DW_FORM_indirect:
       return "DW_FORM_indirect";
-    case DW_FORM_APPLE_db_str:
-      return "DW_FORM_APPLE_db_str";
+    //case DW_FORM_APPLE_db_str:
+    //  return "DW_FORM_APPLE_db_str";
     default:
       return "DW_FORM_<unknown>";
     }
 }
+
+/* Convert a DIE tag into its string name.  */
+
+char * dwarf_tag_name (unsigned tag)
+{
+  switch (tag)
+    {
+    case DW_TAG_padding:
+      return "DW_TAG_padding";
+    case DW_TAG_array_type:
+      return "DW_TAG_array_type";
+    case DW_TAG_class_type:
+      return "DW_TAG_class_type";
+    case DW_TAG_entry_point:
+      return "DW_TAG_entry_point";
+    case DW_TAG_enumeration_type:
+      return "DW_TAG_enumeration_type";
+    case DW_TAG_formal_parameter:
+      return "DW_TAG_formal_parameter";
+    case DW_TAG_imported_declaration:
+      return "DW_TAG_imported_declaration";
+    case DW_TAG_label:
+      return "DW_TAG_label";
+    case DW_TAG_lexical_block:
+      return "DW_TAG_lexical_block";
+    case DW_TAG_member:
+      return "DW_TAG_member";
+    case DW_TAG_pointer_type:
+      return "DW_TAG_pointer_type";
+    case DW_TAG_reference_type:
+      return "DW_TAG_reference_type";
+    case DW_TAG_compile_unit:
+      return "DW_TAG_compile_unit";
+    case DW_TAG_string_type:
+      return "DW_TAG_string_type";
+    case DW_TAG_structure_type:
+      return "DW_TAG_structure_type";
+    case DW_TAG_subroutine_type:
+      return "DW_TAG_subroutine_type";
+    case DW_TAG_typedef:
+      return "DW_TAG_typedef";
+    case DW_TAG_union_type:
+      return "DW_TAG_union_type";
+    case DW_TAG_unspecified_parameters:
+      return "DW_TAG_unspecified_parameters";
+    case DW_TAG_variant:
+      return "DW_TAG_variant";
+    case DW_TAG_common_block:
+      return "DW_TAG_common_block";
+    case DW_TAG_common_inclusion:
+      return "DW_TAG_common_inclusion";
+    case DW_TAG_inheritance:
+      return "DW_TAG_inheritance";
+    case DW_TAG_inlined_subroutine:
+      return "DW_TAG_inlined_subroutine";
+    case DW_TAG_module:
+      return "DW_TAG_module";
+    case DW_TAG_ptr_to_member_type:
+      return "DW_TAG_ptr_to_member_type";
+    case DW_TAG_set_type:
+      return "DW_TAG_set_type";
+    case DW_TAG_subrange_type:
+      return "DW_TAG_subrange_type";
+    case DW_TAG_with_stmt:
+      return "DW_TAG_with_stmt";
+    case DW_TAG_access_declaration:
+      return "DW_TAG_access_declaration";
+    case DW_TAG_base_type:
+      return "DW_TAG_base_type";
+    case DW_TAG_catch_block:
+      return "DW_TAG_catch_block";
+    case DW_TAG_const_type:
+      return "DW_TAG_const_type";
+    case DW_TAG_constant:
+      return "DW_TAG_constant";
+    case DW_TAG_enumerator:
+      return "DW_TAG_enumerator";
+    case DW_TAG_file_type:
+      return "DW_TAG_file_type";
+    case DW_TAG_friend:
+      return "DW_TAG_friend";
+    case DW_TAG_namelist:
+      return "DW_TAG_namelist";
+    case DW_TAG_namelist_item:
+      return "DW_TAG_namelist_item";
+    case DW_TAG_packed_type:
+      return "DW_TAG_packed_type";
+    case DW_TAG_subprogram:
+      return "DW_TAG_subprogram";
+    case DW_TAG_template_type_param:
+      return "DW_TAG_template_type_param";
+    case DW_TAG_template_value_param:
+      return "DW_TAG_template_value_param";
+    case DW_TAG_thrown_type:
+      return "DW_TAG_thrown_type";
+    case DW_TAG_try_block:
+      return "DW_TAG_try_block";
+    case DW_TAG_variant_part:
+      return "DW_TAG_variant_part";
+    case DW_TAG_variable:
+      return "DW_TAG_variable";
+    case DW_TAG_volatile_type:
+      return "DW_TAG_volatile_type";
+    case DW_TAG_dwarf_procedure:
+      return "DW_TAG_dwarf_procedure";
+    case DW_TAG_restrict_type:
+      return "DW_TAG_restrict_type";
+    case DW_TAG_interface_type:
+      return "DW_TAG_interface_type";
+    case DW_TAG_namespace:
+      return "DW_TAG_namespace";
+    case DW_TAG_imported_module:
+      return "DW_TAG_imported_module";
+    case DW_TAG_unspecified_type:
+      return "DW_TAG_unspecified_type";
+    case DW_TAG_partial_unit:
+      return "DW_TAG_partial_unit";
+    case DW_TAG_imported_unit:
+      return "DW_TAG_imported_unit";
+    case DW_TAG_MIPS_loop:
+      return "DW_TAG_MIPS_loop";
+    case DW_TAG_format_label:
+      return "DW_TAG_format_label";
+    case DW_TAG_function_template:
+      return "DW_TAG_function_template";
+    case DW_TAG_class_template:
+      return "DW_TAG_class_template";
+    default:
+      return "DW_TAG_<unknown>";
+    }
+}
+
 

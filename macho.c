@@ -34,6 +34,23 @@ struct lc_data_in_code
     uint32_t size;
 };
 
+/*  This data structure holds the information of an abbrev. */
+struct abbrev_info
+{
+    unsigned int number;    /*  number identifying abbrev */
+    enum dwarf_tag tag;     /*  dwarf tag */
+    unsigned short has_children;        /*  boolean */
+    unsigned short num_attrs;   /*  number of attributes */
+    struct attr_abbrev *attrs;  /*  an array of attribute descriptions */
+    struct abbrev_info *next;   /*  next in chain */
+};
+
+struct attr_abbrev
+{
+    enum dwarf_attribute name; 
+    enum dwarf_form form; 
+};
+
 //struct data_of_interest{
 //    uint32_t text_vmaddr;
 //};
@@ -41,7 +58,7 @@ struct lc_data_in_code
 struct data_of_interest doi = {0};
 
 struct section *dwarf_section_headers = NULL;
-
+struct abbrev_info *dwarf_abbrevs = NULL;
 struct dwarf_sections{
     unsigned char *dwarf_info_section;
     unsigned char *dwarf_abbrev_section;
@@ -332,23 +349,6 @@ int parse_macho(const char *filename){
 }
 
 
-/*  This data structure holds the information of an abbrev. */
-struct abbrev_info
-{
-    unsigned int number;    /*  number identifying abbrev */
-    enum dwarf_tag tag;     /*  dwarf tag */
-    unsigned short has_children;        /*  boolean */
-    unsigned short num_attrs;   /*  number of attributes */
-    struct attr_abbrev *attrs;  /*  an array of attribute descriptions */
-    struct abbrev_info *next;   /*  next in chain */
-};
-
-struct attr_abbrev
-{
-    enum dwarf_attribute name; 
-    enum dwarf_form form; 
-};
-
 
 signed long long 
 decode_signed_leb128(unsigned char* leb128, unsigned long* leb128_length)
@@ -450,70 +450,100 @@ decode_unsigned_leb128(unsigned char* leb128, unsigned long* leb128_length)
     }
 }
 unsigned int get_num_attr_spec_pair(unsigned char* current_abbrev_pos){
+    unsigned long length = 0;
     unsigned int num_attr_spec_pair = 0;
-    unsigned long length = 0;
-    unsigned int attr_name_code = decode_unsigned_leb128(current_abbrev_pos ,&length);
-    unsigned long long attr_form_code = decode_unsigned_leb128(current_abbrev_pos ,&length);
-    while (*current_abbrev_pos != '\0' || *(current_abbrev_pos+ 1) != '\0'){
-        num_attr_spec_pair ++;
-        current_abbrev_pos += 2;
-    }
-    return num_attr_spec_pair;
-}
-
-void parse_dwarf_abbrev(){
-    unsigned char * current_abbrev_pos = dwarf_sections.dwarf_abbrev_section;
-    int size = dwarf_sections.dwarf_abbrev_section_size;
-    unsigned char temp = 0;
-    unsigned long length = 0;
-    unsigned long long abbrev_code = decode_unsigned_leb128(current_abbrev_pos, &length);
-    printf("%llu %lu\n", abbrev_code, length);
-    current_abbrev_pos += length;
-    unsigned long long entry_code = decode_unsigned_leb128(current_abbrev_pos, &length);
-    printf("%llu\n", entry_code);
-    current_abbrev_pos += length;
-    unsigned char has_children = *current_abbrev_pos;
-    printf("%u\n", has_children);
-    current_abbrev_pos ++;
-//    unsigned int num_attr_spec_pair = 0;
-//    num_attr_spec_pair = get_num_attr_spec_pair(current_abbrev_pos);
-//    printf("num_attr_spec_pair: %d\n", num_attr_spec_pair);
-//
     unsigned int attr_name_code = (unsigned int)decode_unsigned_leb128(current_abbrev_pos, &length);
     current_abbrev_pos += length;
     unsigned int attr_form_code = (unsigned int)decode_unsigned_leb128(current_abbrev_pos, &length);
     current_abbrev_pos += length;
     while(attr_name_code != 0 || attr_form_code != 0){
-        struct attr_abbrev* attr = malloc(sizeof(struct attr_abbrev)); 
-        memset(attr, '\0', sizeof(struct attr_abbrev));
-        attr->name = attr_name_code;
-        attr->form = attr_form_code;
-        printf("%02X ", attr->name);
-        printf("%02X", attr->form);
-        printf("\n");
-        printf("%s %s\n", dwarf_attr_name(attr->name), dwarf_attr_name(attr->form));
         attr_name_code = (unsigned int)decode_unsigned_leb128(current_abbrev_pos ,&length);
         current_abbrev_pos += length;
         attr_form_code = (unsigned int)decode_unsigned_leb128(current_abbrev_pos ,&length);
         current_abbrev_pos += length;
+        num_attr_spec_pair ++;
     }
+    return num_attr_spec_pair;
+}
 
-//struct abbrev_info
-//{
-//    unsigned int number;    /*  number identifying abbrev */
-//    enum dwarf_tag tag;     /*  dwarf tag */
-//    unsigned short has_children;        /*  boolean */
-//    unsigned short num_attrs;   /*  number of attributes */
-//    struct attr_abbrev *attrs;  /*  an array of attribute descriptions */
-//    struct abbrev_info *next;   /*  next in chain */
-//};
-//
-//struct attr_abbrev
-//{
-//    enum dwarf_attribute name; 
-//    enum dwarf_form form; 
-//};
+void free_dwarf_abbrev(){
 
+}
+
+void parse_dwarf_info(){
+    unsigned char * current_abbrev_pos = dwarf_sections.dwarf_abbrev_section;
+    int size = dwarf_sections.dwarf_abbrev_section_size;
+}
+
+void parse_dwarf_abbrev(){
+    unsigned char * current_abbrev_pos = dwarf_sections.dwarf_abbrev_section;
+    int size = dwarf_sections.dwarf_abbrev_section_size;
+    unsigned char* endof_abbrev_pos = current_abbrev_pos + size;
+    dwarf_abbrevs = NULL;
+    struct abbrev_info *prev = NULL;
+    int i = 0;
+    while(current_abbrev_pos < endof_abbrev_pos && *current_abbrev_pos != '\0'){
+        unsigned char temp = 0;
+        unsigned long length = 0;
+        unsigned long long abbrev_code = decode_unsigned_leb128(current_abbrev_pos, &length);
+        //printf("%llu %lu\n", abbrev_code, length);
+        current_abbrev_pos += length;
+        unsigned long long entry_code = decode_unsigned_leb128(current_abbrev_pos, &length);
+        //printf("%llu\n", entry_code);
+        current_abbrev_pos += length;
+        unsigned char has_children = *current_abbrev_pos;
+        //printf("%u\n", has_children);
+        current_abbrev_pos ++;
+
+        unsigned int num_attr_spec_pair = 0;
+        num_attr_spec_pair = get_num_attr_spec_pair(current_abbrev_pos);
+
+        struct abbrev_info *ai = malloc(sizeof(struct abbrev_info));
+        memset(ai, '\0', sizeof(struct abbrev_info));
+        ai->number = (unsigned int)abbrev_code;
+        ai->tag = (unsigned int)entry_code;
+        ai->has_children = (unsigned short)has_children;
+        ai->num_attrs = (unsigned short)num_attr_spec_pair;
+        ai->next = NULL;
+        printf("%s\t", dwarf_tag_name(ai->tag));
+        printf("num_attr_spec_pair: %d\n", num_attr_spec_pair);
+        if (num_attr_spec_pair != 0){
+            struct attr_abbrev *attrs = malloc(num_attr_spec_pair * sizeof(struct attr_abbrev));
+            memset(attrs, '\0', num_attr_spec_pair * sizeof(struct attr_abbrev));
+            unsigned int attr_name_code = (unsigned int)decode_unsigned_leb128(current_abbrev_pos, &length);
+            current_abbrev_pos += length;
+            unsigned int attr_form_code = (unsigned int)decode_unsigned_leb128(current_abbrev_pos, &length);
+            current_abbrev_pos += length;
+            int j = 0;
+            while(attr_name_code != 0 || attr_form_code != 0){
+                attrs[j].name = attr_name_code;
+                attrs[j].form = attr_form_code;
+                //printf("%02X ", attr->name);
+                //printf("%02X", attr->form);
+                //printf("\n");
+                printf("%s %s\n", dwarf_attr_name(attrs[j].name), dwarf_form_name(attrs[j].form));
+                attr_name_code = (unsigned int)decode_unsigned_leb128(current_abbrev_pos ,&length);
+                current_abbrev_pos += length;
+                attr_form_code = (unsigned int)decode_unsigned_leb128(current_abbrev_pos ,&length);
+                current_abbrev_pos += length;
+                j++;
+            }
+            ai->attrs = attrs;
+        }else{
+            current_abbrev_pos += 2;
+            ai->attrs = NULL;
+        }
+        printf("\n");
+        if(prev != NULL){
+            prev->next = ai;
+        }
+        prev = ai;
+        if(i == 0){
+            dwarf_abbrevs = prev;
+        }
+        i++;
+    }
+    //printf("%02X", *current_abbrev_pos);
 }
 
 int parse_dwarf_sections(){
