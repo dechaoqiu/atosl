@@ -24,7 +24,9 @@
 #ifndef ABBREV_HASH_SIZE
 #define ABBREV_HASH_SIZE 121
 #endif
+#define INITIAL_LINE_VECTOR_LENGTH  1000
 typedef unsigned int CORE_ADDR;
+extern char *project_name;
 
 struct lc_function_starts
 {
@@ -80,15 +82,15 @@ struct dwarf2_per_cu_data
    Because of alignment constraints, this structure has padding and cannot
    be mapped directly onto the beginning of the .debug_info section.  */
 struct aranges_header
-  {
+{
     unsigned int length;	/* byte len of the .debug_aranges
-				   contribution */
+                               contribution */
     unsigned short version;	/* version number -- 2 for dwarf
-				   version 2 */
+                               version 2 */
     unsigned int info_offset;	/* offset into .debug_info section */
     unsigned char addr_size;	/* byte size of an address */
     unsigned char seg_size;	/* byte size of segment descriptor */
-  } ;
+} ;
 
 
 struct arange{
@@ -146,6 +148,14 @@ struct dwarf2_per_objfile
 
 
 static struct dwarf2_per_objfile *dwarf2_per_objfile;
+
+struct function_range
+{
+  const char *name;
+  CORE_ADDR lowpc, highpc;
+  int seen_line;
+  struct function_range *next;
+};
 
 
 
@@ -366,6 +376,1114 @@ distinguish these in buildsym.c.  */
 };
 
 //struct dwarf2_cu *cu;
+//
+
+
+
+
+/* .debug_line statement program prologue
+   Because of alignment constraints, this structure has padding and cannot
+   be mapped directly onto the beginning of the .debug_info section.  */
+struct statement_prologue
+{
+    unsigned int total_length;	/* byte length of the statement
+                                   information */
+    unsigned short version;	/* version number -- 2 for DWARF
+                               version 2 */
+    unsigned int prologue_length;	/* # bytes between prologue &
+                                       stmt program */
+    unsigned char minimum_instruction_length;	/* byte size of
+                                                   smallest instr */
+    unsigned char default_is_stmt;	/* initial value of is_stmt
+                                       register */
+    char line_base;
+    unsigned char line_range;
+    unsigned char opcode_base;	/* number assigned to first special
+                                   opcode */
+    unsigned char *standard_opcode_lengths;
+};
+
+/* The line number information for a compilation unit (found in the
+   .debug_line section) begins with a "statement program header",
+   which contains the following information.  */
+struct line_header
+{
+    unsigned int total_length;
+    unsigned short version;
+    unsigned int header_length;
+    unsigned char minimum_instruction_length;
+    unsigned char default_is_stmt;
+    int line_base;
+    unsigned char line_range;
+    unsigned char opcode_base;
+
+    /* standard_opcode_lengths[i] is the number of operands for the
+       standard opcode whose value is i.  This means that
+       standard_opcode_lengths[0] is unused, and the last meaningful
+       element is standard_opcode_lengths[opcode_base - 1].  */
+    unsigned char *standard_opcode_lengths;
+
+    /* The include_directories table.  NOTE!  These strings are not
+       allocated with xmalloc; instead, they are pointers into
+       debug_line_buffer.  If you try to free them, `free' will get
+       indigestion.  */
+    unsigned int num_include_dirs, include_dirs_size;
+    char **include_dirs;
+
+    /* The file_names table.  NOTE!  These strings are not allocated
+       with xmalloc; instead, they are pointers into debug_line_buffer.
+       Don't try to free them directly.  */
+    unsigned int num_file_names, file_names_size;
+    struct file_entry
+    {
+        char *name;
+        unsigned int dir_index;
+        unsigned int mod_time;
+        unsigned int length;
+        int included_p; /* Non-zero if referenced by the Line Number Program.  */
+    } *file_names;
+
+    /* The start and end of the statement program following this
+       header.  These point into dwarf2_per_objfile->line_buffer.  */
+    char *statement_program_start, *statement_program_end;
+};
+
+
+
+
+/* Free the line_header structure *LH, and any arrays and strings it
+   refers to.  */
+//static void
+//free_line_header (struct line_header *lh)
+//{
+//  if (lh->standard_opcode_lengths)
+//    xfree (lh->standard_opcode_lengths);
+//
+//  /* Remember that all the lh->file_names[i].name pointers are
+//     pointers into debug_line_buffer, and don't need to be freed.  */
+//  if (lh->file_names)
+//    xfree (lh->file_names);
+//
+//  /* Similarly for the include directory names.  */
+//  if (lh->include_dirs)
+//    xfree (lh->include_dirs);
+//
+//  xfree (lh);
+//}
+
+
+CORE_ADDR read_signed_16(char *info_ptr){
+    //FIXME
+    signed int ret = 0;
+    ret = info_ptr[1];
+    ret = (ret << 8) + info_ptr[0];
+    return ret;
+}
+
+signed int read_signed_32(unsigned char *info_ptr){
+    signed int ret = 0;
+    ret = info_ptr[3];
+    ret = (ret << 8) + info_ptr[2];
+    ret = (ret << 8) + info_ptr[1];
+    ret = (ret << 8) + info_ptr[0];
+    return ret;
+}
+
+static unsigned int read_1_byte (unsigned char *info_ptr)
+{
+    return *info_ptr;
+}
+
+static int read_1_signed_byte (char *buf)
+{
+    int ret = 0;
+    ret = (int)*buf;
+    return ret;
+}
+
+static unsigned int read_2_bytes (unsigned char *info_ptr)
+{
+    //read bytes little endian?
+    unsigned short ret = 0;
+    ret = info_ptr[1];
+    ret = (ret << 8) + info_ptr[0];
+    return ret;
+}
+
+//static int
+//read_2_signed_bytes (bfd *abfd, char *buf)
+//{
+//  return bfd_get_signed_16 (abfd, (bfd_byte *) buf);
+//}
+
+static unsigned int read_4_bytes (unsigned char *info_ptr)
+{
+    unsigned int ret = 0;
+    ret = info_ptr[3];
+    //printf("ret: %x\n", ret);
+    //printf("info_ptr: %x\n", (unsigned char)info_ptr[3]);
+    ret = (ret << 8) + info_ptr[2];
+    //printf("ret: %x\n", ret);
+    //printf("info_ptr: %x\n", (unsigned char)info_ptr[2]);
+    ret = (ret << 8) + info_ptr[1];
+    //printf("ret: %x\n", ret);
+    //printf("info_ptr: %x\n", (unsigned char)info_ptr[1]);
+    ret = (ret << 8) + info_ptr[0];
+    //printf("ret: %x\n", ret);
+    //printf("info_ptr: %x\n", (unsigned char)info_ptr[0]);
+    //printf("\n");
+    return ret;
+}
+
+//static int
+//read_4_signed_bytes (bfd *abfd, char *buf)
+//{
+//  return bfd_get_signed_32 (abfd, (bfd_byte *) buf);
+//}
+
+static unsigned long read_8_bytes (unsigned char *info_ptr)
+{
+    //read bytes little endian?
+    unsigned long ret = 0;
+    ret = info_ptr[7];
+    ret = (ret << 8) + info_ptr[6];
+    ret = (ret << 8) + info_ptr[5];
+    ret = (ret << 8) + info_ptr[4];
+    ret = (ret << 8) + info_ptr[3];
+    ret = (ret << 8) + info_ptr[2];
+    ret = (ret << 8) + info_ptr[1];
+    ret = (ret << 8) + info_ptr[0];
+    return ret;
+}
+
+unsigned int read_unsigned_int(unsigned char *info_ptr){
+    //read bytes little endian?
+    unsigned int ret = 0;
+    ret = info_ptr[3];
+    ret = (ret << 8) + info_ptr[2];
+    ret = (ret << 8) + info_ptr[1];
+    ret = (ret << 8) + info_ptr[0];
+    return ret;
+}
+
+unsigned short read_unsigned_short(unsigned char *info_ptr){
+    //read bytes little endian?
+    unsigned short ret = 0;
+    ret = info_ptr[1];
+    ret = (ret << 8) + info_ptr[0];
+    return ret;
+}
+
+read_unsigned_char(unsigned char *info_ptr){
+    unsigned char ret = 0;
+    ret = info_ptr[0];
+    return ret;
+}
+
+
+static char * skip_leb128 (unsigned char *buf)
+{
+    int byte;
+
+    while (1)
+    {
+        byte = *buf;
+        buf++;
+        if ((byte & 128) == 0)
+            return buf;
+    }
+}
+
+
+
+
+
+
+
+
+
+long long read_signed_leb128(unsigned char* leb128, unsigned int* leb128_length)
+{
+    signed long long number = 0;
+    int sign = 0;
+    signed long shift = 0;
+    unsigned char byte = *leb128;
+    signed long byte_length = 1;
+
+    /*  byte_length being the number of bytes of data absorbed so far in 
+     *         turning the leb into a Dwarf_Signed. */
+
+    for (;;) {
+        sign = byte & 0x40;
+        number |= ((signed long long) ((byte & 0x7f))) << shift;
+        shift += 7;
+
+        if ((byte & 0x80) == 0) {
+            break;
+        }
+        ++leb128;
+        byte = *leb128;
+        byte_length++;
+    }
+
+    if ((shift < sizeof(signed long long) * 8) && sign) {
+        number |= -((signed long long) 1 << shift);
+    }
+
+    if (leb128_length != NULL)
+        *leb128_length = byte_length;
+    return (number);
+}
+
+
+unsigned long long read_unsigned_leb128(unsigned char* leb128, unsigned int* leb128_length)
+{
+    unsigned char byte;
+    unsigned long word_number;
+    unsigned long long number;
+    signed long shift;
+    signed long byte_length;
+
+    /*  The following unrolls-the-loop for the first few bytes and
+     *  unpacks into 32 bits to make this as fast as possible.
+     *  word_number is assumed big enough that the shift has a defined
+     *  result. */
+    if ((*leb128 & 0x80) == 0) {
+        if (leb128_length != NULL)
+            *leb128_length = 1;
+        return (*leb128);
+    } else if ((*(leb128 + 1) & 0x80) == 0) {
+        if (leb128_length != NULL)
+            *leb128_length = 2;
+
+        word_number = *leb128 & 0x7f;
+        word_number |= (*(leb128 + 1) & 0x7f) << 7;
+        return (word_number);
+    } else if ((*(leb128 + 2) & 0x80) == 0) {
+        if (leb128_length != NULL)
+            *leb128_length = 3;
+
+        word_number = *leb128 & 0x7f;
+        word_number |= (*(leb128 + 1) & 0x7f) << 7;
+        word_number |= (*(leb128 + 2) & 0x7f) << 14;
+        return (word_number);
+    } else if ((*(leb128 + 3) & 0x80) == 0) {
+        if (leb128_length != NULL)
+            *leb128_length = 4;
+
+        word_number = *leb128 & 0x7f;
+        word_number |= (*(leb128 + 1) & 0x7f) << 7;
+        word_number |= (*(leb128 + 2) & 0x7f) << 14;
+        word_number |= (*(leb128 + 3) & 0x7f) << 21;
+        return (word_number);
+    }
+
+    /*  The rest handles long numbers Because the 'number' may be larger 
+     *  than the default int/unsigned, we must cast the 'byte' before
+     *  the shift for the shift to have a defined result. */
+    number = 0;
+    shift = 0;
+    byte_length = 1;
+    byte = *(leb128);
+    for (;;) {
+        number |= ((unsigned int) (byte & 0x7f)) << shift;
+
+        if ((byte & 0x80) == 0) {
+            if (leb128_length != NULL)
+                *leb128_length = byte_length;
+            return (number);
+        }
+        shift += 7;
+
+        byte_length++;
+        ++leb128;
+        byte = *leb128;
+    }
+}
+
+
+static char * read_string (char *buf, unsigned int *bytes_read_ptr)
+{
+    if (*buf == '\0')
+    {
+        *bytes_read_ptr = 1;
+        return NULL;
+    }
+    *bytes_read_ptr = strlen (buf) + 1;
+    return buf;
+}
+/* Read an offset from the data stream.  The size of the offset is
+   given by cu_header->offset_size.  */
+
+static long read_offset (char *buf, const struct comp_unit_head *cu_header, int *bytes_read)
+{
+    long retval = 0;
+
+    switch (cu_header->offset_size)
+    {
+        case 4:
+            retval = read_4_bytes(buf);
+            *bytes_read = 4;
+            break;
+        case 8:
+            retval = read_8_bytes(buf);
+            *bytes_read = 8;
+            break;
+        default:
+            printf("read_offset: bad switch\n");
+    }
+
+    return retval;
+}
+
+
+static CORE_ADDR read_address_of_cu (char *buf, struct dwarf2_cu *cu, int *bytes_read)
+{
+    struct comp_unit_head *cu_header = &cu->header;
+    CORE_ADDR retval = 0;
+
+    //if (cu_header->signed_addr_p)
+    //{
+    switch (cu_header->addr_size)
+    {
+        case 2:
+            //unsigned
+            retval = read_signed_16(buf);
+            break;
+        case 4:
+            retval = read_signed_32(buf);
+            break;
+            //case 8:
+            //    retval = bfd_get_signed_64 (abfd, (bfd_byte *) buf);
+            //    break;
+        default:
+            printf("read address: bad switch, signed\n");
+    }
+    //}
+    //else
+    //{
+    //    switch (cu_header->addr_size)
+    //    {
+    //        case 2:
+    //            retval = bfd_get_16 (abfd, (bfd_byte *) buf);
+    //            break;
+    //        case 4:
+    //            retval = bfd_get_32 (abfd, (bfd_byte *) buf);
+    //            break;
+    //        case 8:
+    //            retval = bfd_get_64 (abfd, (bfd_byte *) buf);
+    //            break;
+    //        default:
+    //            internal_error (__FILE__, __LINE__,
+    //                    _("read_address_of_cu: bad switch, unsigned [in module %s]"),
+    //                    bfd_get_filename (abfd));
+    //    }
+    //}
+
+    *bytes_read = cu_header->addr_size;
+    return retval;
+}
+
+/* Read the initial length from a section.  The (draft) DWARF 3
+   specification allows the initial length to take up either 4 bytes
+   or 12 bytes.  If the first 4 bytes are 0xffffffff, then the next 8
+   bytes describe the length and all offsets will be 8 bytes in length
+   instead of 4.
+
+   An older, non-standard 64-bit format is also handled by this
+   function.  The older format in question stores the initial length
+   as an 8-byte quantity without an escape value.  Lengths greater
+   than 2^32 aren't very common which means that the initial 4 bytes
+   is almost always zero.  Since a length value of zero doesn't make
+   sense for the 32-bit format, this initial zero can be considered to
+   be an escape value which indicates the presence of the older 64-bit
+   format.  As written, the code can't detect (old format) lengths
+   greater than 4GB.  If it becomes necessary to handle lengths
+   somewhat larger than 4GB, we could allow other small values (such
+   as the non-sensical values of 1, 2, and 3) to also be used as
+   escape values indicating the presence of the old format.
+
+   The value returned via bytes_read should be used to increment the
+   relevant pointer after calling read_initial_length_of_comp_unit().
+
+   As a side effect, this function sets the fields initial_length_size
+   and offset_size in cu_header to the values appropriate for the
+   length field.  (The format of the initial length field determines
+   the width of file offsets to be fetched later with read_offset().)
+
+   [ Note:  read_initial_length_of_comp_unit() and read_offset() are based on the
+   document entitled "DWARF Debugging Information Format", revision
+   3, draft 8, dated November 19, 2001.  This document was obtained
+from:
+
+http://reality.sgiweb.org/davea/dwarf3-draft8-011125.pdf
+
+This document is only a draft and is subject to change.  (So beware.)
+
+Details regarding the older, non-standard 64-bit format were
+determined empirically by examining 64-bit ELF files produced by
+the SGI toolchain on an IRIX 6.5 machine.
+
+- Kevin, July 16, 2002
+] */
+static long read_initial_length_of_aranges(char *buf, struct aranges_header *aranges_header, int *bytes_read){
+    long length = read_4_bytes(buf);
+    return length;
+}
+
+static long read_initial_length_of_comp_unit (char *buf, struct comp_unit_head *cu_header,
+        int *bytes_read)
+{
+    long length = read_4_bytes(buf);
+
+    if (length == 0xffffffff)
+    {
+        length = read_8_bytes(buf + 4);
+        *bytes_read = 12;
+    }
+    else if (length == 0)
+    {
+        /* Handle the (non-standard) 64-bit DWARF2 format used by IRIX.  */
+        length = read_8_bytes(buf + 4);
+        *bytes_read = 8;
+    }
+    else
+    {
+        *bytes_read = 4;
+    }
+
+    if (cu_header)
+    {
+        assert (cu_header->initial_length_size == 0
+                || cu_header->initial_length_size == 4
+                || cu_header->initial_length_size == 8
+                || cu_header->initial_length_size == 12);
+
+        if (cu_header->initial_length_size != 0 && cu_header->initial_length_size != *bytes_read){
+            printf("asset error ...\n");
+        }
+
+        cu_header->initial_length_size = *bytes_read;
+        cu_header->offset_size = (*bytes_read == 4) ? 4 : 8;
+    }
+
+    return length;
+}
+
+
+
+
+
+/* Add an entry to LH's include directory table.  */
+static void
+add_include_dir (struct line_header *lh, char *include_dir)
+{
+  /* Grow the array if necessary.  */
+  if (lh->include_dirs_size == 0)
+    {
+      lh->include_dirs_size = 1; /* for testing */
+      lh->include_dirs = malloc (lh->include_dirs_size * sizeof (*lh->include_dirs));
+    }
+  else if (lh->num_include_dirs >= lh->include_dirs_size)
+    {
+      lh->include_dirs_size *= 2;
+      lh->include_dirs = realloc (lh->include_dirs, (lh->include_dirs_size * sizeof (*lh->include_dirs)));
+    }
+
+  lh->include_dirs[lh->num_include_dirs++] = include_dir;
+}
+ 
+
+/* Add an entry to LH's file name table.  */
+static void add_file_name (struct line_header *lh,
+               char *name,
+               unsigned int dir_index,
+               unsigned int mod_time,
+               unsigned int length)
+{
+  struct file_entry *fe;
+
+  /* Grow the array if necessary.  */
+  if (lh->file_names_size == 0)
+    {
+      lh->file_names_size = 1; /* for testing */
+      lh->file_names = malloc (lh->file_names_size
+                                * sizeof (*lh->file_names));
+    }
+  else if (lh->num_file_names >= lh->file_names_size)
+    {
+      lh->file_names_size *= 2;
+      lh->file_names = realloc (lh->file_names,
+                                 (lh->file_names_size
+                                  * sizeof (*lh->file_names)));
+    }
+
+  fe = &lh->file_names[lh->num_file_names++];
+  fe->name = name;
+  fe->dir_index = dir_index;
+  fe->mod_time = mod_time;
+  fe->length = length;
+  fe->included_p = 0;
+}
+ 
+
+
+
+
+/* Read the statement program header starting at OFFSET in
+   .debug_line, according to the endianness of ABFD.  Return a pointer
+   to a struct line_header, allocated using xmalloc.
+
+NOTE: the strings in the include directory and file name tables of
+the returned object point into debug_line_buffer, and must not be
+freed.  */
+static struct line_header * dwarf_decode_line_header (unsigned int offset, struct dwarf2_cu *cu)
+{
+    //  struct cleanup *back_to;
+    struct line_header *lh;
+    char *line_ptr;
+    /* APPLE LOCAL avoid type warnings by making BYTES_READ unsigned.  */
+    unsigned bytes_read;
+    int i;
+    char *cur_dir, *cur_file;
+
+    if (dwarf2_per_objfile->line_buffer == NULL)
+    {
+        printf("missing .debug_line section\n");
+        return 0;
+    }
+
+    /* Make sure that at least there's room for the total_length field.
+       That could be 12 bytes long, but we're just going to fudge that.  */
+    if (offset + 4 >= dwarf2_per_objfile->line_size)
+    {
+        //dwarf2_statement_list_fits_in_line_number_section_complaint ();
+        printf(".debug_line incomplete.\n");
+        return 0;
+    }
+
+    lh = malloc (sizeof (*lh));
+    memset (lh, 0, sizeof (*lh));
+    //back_to = make_cleanup ((make_cleanup_ftype *) free_line_header, (void *) lh);
+
+    line_ptr = dwarf2_per_objfile->line_buffer + offset;
+
+    /* Read in the header.  */
+    /* APPLE LOCAL Add cast to avoid type mismatch in arg4 warning.  */
+    lh->total_length = read_initial_length_of_comp_unit (line_ptr, &cu->header, (int *) &bytes_read);
+    line_ptr += bytes_read;
+    if (line_ptr + lh->total_length > (dwarf2_per_objfile->line_buffer
+                + dwarf2_per_objfile->line_size))
+    {
+        printf(".debug_line incomplete.\n");
+        return 0;
+    }
+    lh->statement_program_end = line_ptr + lh->total_length;
+    lh->version = read_2_bytes (line_ptr);
+    line_ptr += 2;
+    /* APPLE LOCAL Add cast to avoid type mismatch in arg4 warning.  */
+    lh->header_length = read_offset (line_ptr, &cu->header, (int *) &bytes_read);
+    line_ptr += bytes_read;
+    lh->minimum_instruction_length = read_1_byte (line_ptr);
+    line_ptr += 1;
+    lh->default_is_stmt = read_1_byte (line_ptr);
+    line_ptr += 1;
+    lh->line_base = read_1_signed_byte (line_ptr);
+    line_ptr += 1;
+    lh->line_range = read_1_byte (line_ptr);
+    line_ptr += 1;
+    lh->opcode_base = read_1_byte (line_ptr);
+    line_ptr += 1;
+    lh->standard_opcode_lengths = (unsigned char *) malloc (lh->opcode_base * sizeof (unsigned char));
+
+    lh->standard_opcode_lengths[0] = 1;  /* This should never be used anyway.  */
+    for (i = 1; i < lh->opcode_base; ++i)
+    {
+        lh->standard_opcode_lengths[i] = read_1_byte (line_ptr);
+        line_ptr += 1;
+    }
+
+    /* Read directory table.  */
+    while ((cur_dir = read_string (line_ptr, &bytes_read)) != NULL)
+    {
+        line_ptr += bytes_read;
+        add_include_dir (lh, cur_dir);
+    }
+    line_ptr += bytes_read;
+
+    /* Read file name table.  */
+    while ((cur_file = read_string (line_ptr, &bytes_read)) != NULL)
+    {
+        unsigned int dir_index, mod_time, length;
+
+        line_ptr += bytes_read;
+        dir_index = read_unsigned_leb128 (line_ptr, &bytes_read);
+        line_ptr += bytes_read;
+        mod_time = read_unsigned_leb128 (line_ptr, &bytes_read);
+        line_ptr += bytes_read;
+        length = read_unsigned_leb128 (line_ptr, &bytes_read);
+        line_ptr += bytes_read;
+
+        add_file_name (lh, cur_file, dir_index, mod_time, length);
+    }
+    line_ptr += bytes_read;
+    lh->statement_program_start = line_ptr; 
+
+    if (line_ptr > (dwarf2_per_objfile->line_buffer
+                + dwarf2_per_objfile->line_size))
+                printf("line number info header doesn't fit in `.debug_line' section\n");
+
+//    discard_cleanups (back_to);
+    return lh;
+}
+
+
+/* This function exists to work around a bug in certain compilers
+   (particularly GCC 2.95), in which the first line number marker of a
+   function does not show up until after the prologue, right before
+   the second line number marker.  This function shifts ADDRESS down
+   to the beginning of the function if necessary, and is called on
+   addresses passed to record_line.  */
+//
+//static CORE_ADDR check_cu_functions (CORE_ADDR address, struct dwarf2_cu *cu)
+//{
+//    struct function_range *fn;
+//
+//    /* Find the function_range containing address.  */
+//    if (!cu->first_fn)
+//        return address;
+//
+//    if (!cu->cached_fn)
+//        cu->cached_fn = cu->first_fn;
+//
+//    fn = cu->cached_fn;
+//    while (fn)
+//        if (fn->lowpc <= address && fn->highpc > address)
+//            goto found;
+//        else
+//            fn = fn->next;
+//
+//    fn = cu->first_fn;
+//    while (fn && fn != cu->cached_fn)
+//        if (fn->lowpc <= address && fn->highpc > address)
+//            goto found;
+//        else
+//            fn = fn->next;
+//
+//    return address;
+//
+//found:
+//    if (fn->seen_line)
+//        return address;
+//    if (address != fn->lowpc)
+//        printf("misplaced first line number at 0x%lx for '%s'", (unsigned long) address, fn->name);
+//    fn->seen_line = 1;
+//    return fn->lowpc;
+//}
+
+/* Each item represents a line-->pc (or the reverse) mapping.  This is
+   somewhat more wasteful of space than one might wish, but since only
+   the files which are actually debugged are read in to core, we don't
+   waste much space.  */
+
+struct linetable_entry
+{
+  int line;
+  CORE_ADDR pc;
+};
+
+/* The order of entries in the linetable is significant.  They should
+   be sorted by increasing values of the pc field.  If there is more than
+   one entry for a given pc, then I'm not sure what should happen (and
+   I not sure whether we currently handle it the best way).
+
+   Example: a C for statement generally looks like this
+
+   10   0x100   - for the init/test part of a for stmt.
+   20   0x200
+   30   0x300
+   10   0x400   - for the increment part of a for stmt.
+
+   If an entry has a line number of zero, it marks the start of a PC
+   range for which no line number information is available.  It is
+   acceptable, though wasteful of table space, for such a range to be
+   zero length.  */
+
+struct linetable
+{
+  int nitems;
+  int lines_are_chars;
+
+  /* Actually NITEMS elements.  If you don't like this use of the
+     `struct hack', you can shove it up your ANSI (seriously, if the
+     committee tells us how to do it, we can probably go along).  */
+  struct linetable_entry item[1];
+};
+
+/* The list of sub-source-files within the current individual
+   compilation.  Each file gets its own symtab with its own linetable
+   and associated info, but they all share one blockvector.  */
+
+struct subfile
+  {
+    //struct subfile *next;
+    //char *name;
+    //char *dirname;
+    struct linetable *line_vector;
+    int line_vector_length;
+    enum language language;
+    //char *debugformat;
+  };
+
+
+
+/* Add a linetable entry for line number LINE and address PC to the
+   line vector for SUBFILE.  */
+
+void record_line (struct subfile *subfile, int line, CORE_ADDR pc)
+{
+  struct linetable_entry *e;
+  /* Ignore the dummy line number in libg.o */
+
+  if (line == 0xffff)
+    {
+      return;
+    }
+            
+  /* Make sure line vector exists and is big enough.  */
+  if (!subfile->line_vector)
+    {
+      subfile->line_vector_length = INITIAL_LINE_VECTOR_LENGTH;
+      subfile->line_vector = (struct linetable *) malloc (sizeof (struct linetable) + subfile->line_vector_length * sizeof (struct linetable_entry));
+      subfile->line_vector->nitems = 0;
+      /* APPLE LOCAL codewarrior support */
+      subfile->line_vector->lines_are_chars = 0;
+      //have_line_numbers = 1;
+    }
+
+  if (subfile->line_vector->nitems + 1 >= subfile->line_vector_length)
+    {
+      subfile->line_vector_length *= 2;
+      subfile->line_vector = (struct linetable *) realloc ((char *) subfile->line_vector,
+		  (sizeof (struct linetable)
+		   + (subfile->line_vector_length
+		      * sizeof (struct linetable_entry))));
+    }
+
+  e = subfile->line_vector->item + subfile->line_vector->nitems++;
+  e->line = line;
+  e->pc = pc;
+//  e->pc = ADDR_BITS_REMOVE(pc);
+}
+
+/* Needed in order to sort line tables from IBM xcoff files.  Sigh!  */
+
+/* APPLE LOCAL make compare_line_numbers extern */
+int
+compare_line_numbers (const void *ln1p, const void *ln2p)
+{
+  struct linetable_entry *ln1 = (struct linetable_entry *) ln1p;
+  struct linetable_entry *ln2 = (struct linetable_entry *) ln2p;
+
+  /* Note: this code does not assume that CORE_ADDRs can fit in ints.
+     Please keep it that way.  */
+  if (ln1->pc < ln2->pc)
+    return -1;
+
+  if (ln1->pc > ln2->pc)
+    return 1;
+
+  /* If pc equal, sort by line.  I'm not sure whether this is optimum
+     behavior (see comment at struct linetable in symtab.h).  */
+  return ln1->line - ln2->line;
+}
+
+
+/* Decode the Line Number Program (LNP) for the given line_header
+   structure and CU.  The actual information extracted and the type
+   of structures created from the LNP depends on the value of PST.
+
+   1. If PST is NULL, then this procedure uses the data from the program
+   to create all necessary symbol tables, and their linetables.
+   The compilation directory of the file is passed in COMP_DIR,
+   and must not be NULL.
+
+   2. If PST is not NULL, this procedure reads the program to determine
+   the list of files included by the unit represented by PST, and
+   builds all the associated partial symbol tables.  In this case,
+   the value of COMP_DIR is ignored, and can thus be NULL (the COMP_DIR
+   is not used to compute the full name of the symtab, and therefore
+   omitting it when building the partial symtab does not introduce
+   the potential for inconsistency - a partial symtab and its associated
+   symbtab having a different fullname -).  */
+
+//static void dwarf_decode_lines (struct line_header *lh, char *comp_dir,
+//        struct dwarf2_cu *cu, struct partial_symtab *pst)
+static struct subfile * dwarf_decode_lines (struct line_header *lh, char *comp_dir, struct dwarf2_cu *cu)
+{
+    char *line_ptr;
+    char *line_end;
+    unsigned int bytes_read;
+    unsigned char op_code, extended_op, adj_opcode;
+    CORE_ADDR baseaddr;
+    //struct objfile *objfile = cu->objfile;
+//    const int decode_for_pst_p = (pst != NULL);
+    const int decode_for_pst_p = 0;
+
+    /* APPLE LOCAL: We'll need to skip linetable entries in functions that
+       were coalesced out.  */
+    int record_linetable_entry = 1;
+    struct subfile *current_subfile = malloc (sizeof (struct subfile));
+    memset(current_subfile, 0, sizeof(struct subfile));
+    /* APPLE LOCAL */
+    //if (debug_debugmap)
+    //    fprintf_unfiltered (gdb_stdlog,
+    //            "debugmap: reading line program for %s\n",
+    //            cu->per_cu->psymtab->filename);
+
+    //baseaddr = ANOFFSET (objfile->section_offsets, SECT_OFF_TEXT (objfile));
+    baseaddr = 0;
+
+    line_ptr = lh->statement_program_start;
+    line_end = lh->statement_program_end;
+
+    /* Read the statement sequences until there's nothing left.  */
+    while (line_ptr < line_end)
+    {
+        /* state machine registers  */
+        CORE_ADDR address = 0;
+        unsigned int file = 1;
+        unsigned int line = 1;
+        unsigned int column = 0;
+        int is_stmt = lh->default_is_stmt;
+        int basic_block = 0;
+        int end_sequence = 0;
+
+        //if (!decode_for_pst_p && lh->num_file_names >= file)
+        //{
+        //    /* Start a subfile for the current file of the state machine.  */
+        //    /* lh->include_dirs and lh->file_names are 0-based, but the
+        //       directory and file name numbers in the statement program
+        //       are 1-based.  */
+        //    struct file_entry *fe = &lh->file_names[file - 1];
+        //    char *dir;
+
+        //    if (fe->dir_index)
+        //        dir = lh->include_dirs[fe->dir_index - 1];
+        //    else
+        //        dir = comp_dir;
+        //    /* APPLE LOCAL: Pass in the compilation directory of this CU.  */
+        //    dwarf2_start_subfile (fe->name, dir, cu->comp_dir);
+        //}
+
+        /* Decode the table.  */
+        while (!end_sequence)
+        {
+            op_code = read_1_byte (line_ptr);
+            line_ptr += 1;
+
+            if (op_code >= lh->opcode_base)
+            {		
+                /* Special operand.  */
+                adj_opcode = op_code - lh->opcode_base;
+                address += (adj_opcode / lh->line_range)
+                    * lh->minimum_instruction_length;
+                line += lh->line_base + (adj_opcode % lh->line_range);
+                lh->file_names[file - 1].included_p = 1;
+                /* APPLE LOCAL: Skip linetable entries coalesced out */
+                if (!decode_for_pst_p && record_linetable_entry)
+                {
+                    /* Append row to matrix using current values.  */
+                    //FIXME check_cu_functions
+                    //record_line (current_subfile, line, check_cu_functions (address, cu));
+                    record_line (current_subfile, line, address);
+                }
+                basic_block = 1;
+            }
+            else switch (op_code)
+            {
+                case DW_LNS_extended_op:
+                    read_unsigned_leb128 (line_ptr, &bytes_read);
+                    line_ptr += bytes_read;
+                    extended_op = read_1_byte (line_ptr);
+                    line_ptr += 1;
+                    switch (extended_op)
+                    {
+                        case DW_LNE_end_sequence:
+                            end_sequence = 1;
+                            lh->file_names[file - 1].included_p = 1;
+                            /* APPLE LOCAL: Skip linetable entries coalesced out */
+                            if (!decode_for_pst_p && record_linetable_entry){
+                                //record_line (current_subfile, 0, address);
+                                record_line (current_subfile, line, address);
+                            }
+                            break;
+                        case DW_LNE_set_address:
+                            /* APPLE LOCAL Add cast to avoid type mismatch in arg4 warn.*/
+                            address = read_address_of_cu (line_ptr, cu, (int *) &bytes_read);
+                            /* APPLE LOCAL: debug map */
+                            {
+                                CORE_ADDR addr;
+                                //FIXME
+                                //if (translate_debug_map_address (cu, address, &addr, 0))
+                                //{
+                                //    address = addr;
+                                //    record_linetable_entry = 1;
+                                //}
+                                //else
+                                    record_linetable_entry = 1;
+                            }
+                            line_ptr += bytes_read;
+                            address += baseaddr;
+                            break;
+                        case DW_LNE_define_file:
+                            {
+                                char *cur_file;
+                                unsigned int dir_index, mod_time, length;
+
+                                cur_file = read_string (line_ptr, &bytes_read);
+                                line_ptr += bytes_read;
+                                dir_index =
+                                    read_unsigned_leb128 (line_ptr, &bytes_read);
+                                line_ptr += bytes_read;
+                                mod_time =
+                                    read_unsigned_leb128 (line_ptr, &bytes_read);
+                                line_ptr += bytes_read;
+                                length =
+                                    read_unsigned_leb128 (line_ptr, &bytes_read);
+                                line_ptr += bytes_read;
+                                add_file_name (lh, cur_file, dir_index, mod_time, length);
+                            }
+                            break;
+                        default:
+                            printf("mangled .debug_line section\n");
+                            return;
+                    }
+                    break;
+                case DW_LNS_copy:
+                    lh->file_names[file - 1].included_p = 1;
+                    /* APPLE LOCAL: Skip linetable entries coalesced out */
+                    if (!decode_for_pst_p && record_linetable_entry)
+//                        record_line (current_subfile, line, check_cu_functions (address, cu));
+                        record_line (current_subfile, line, address);
+                    basic_block = 0;
+                    break;
+                case DW_LNS_advance_pc:
+                    address += lh->minimum_instruction_length
+                        * read_unsigned_leb128 (line_ptr, &bytes_read);
+                    line_ptr += bytes_read;
+                    break;
+                case DW_LNS_advance_line:
+                    line += read_signed_leb128 (line_ptr, &bytes_read);
+                    line_ptr += bytes_read;
+                    break;
+                case DW_LNS_set_file:
+                    {
+                        /* The arrays lh->include_dirs and lh->file_names are
+                           0-based, but the directory and file name numbers in
+                           the statement program are 1-based.  */
+                        struct file_entry *fe;
+                        char *dir;
+
+                        file = read_unsigned_leb128 (line_ptr, &bytes_read);
+                        line_ptr += bytes_read;
+                        fe = &lh->file_names[file - 1];
+                        if (fe->dir_index)
+                            dir = lh->include_dirs[fe->dir_index - 1];
+                        else
+                            dir = comp_dir;
+                        /* APPLE LOCAL: Pass in the compilation dir of this CU.  */
+                        //FIXME
+                        //if (!decode_for_pst_p)
+                        //    dwarf2_start_subfile (fe->name, dir, cu->comp_dir);
+                    }
+                    break;
+                case DW_LNS_set_column:
+                    column = read_unsigned_leb128 (line_ptr, &bytes_read);
+                    line_ptr += bytes_read;
+                    break;
+                case DW_LNS_negate_stmt:
+                    is_stmt = (!is_stmt);
+                    break;
+                case DW_LNS_set_basic_block:
+                    basic_block = 1;
+                    break;
+                    /* Add to the address register of the state machine the
+                       address increment value corresponding to special opcode
+                       255.  I.e., this value is scaled by the minimum
+                       instruction length since special opcode 255 would have
+                       scaled the the increment.  */
+                case DW_LNS_const_add_pc:
+                    address += (lh->minimum_instruction_length
+                            * ((255 - lh->opcode_base) / lh->line_range));
+                    break;
+                case DW_LNS_fixed_advance_pc:
+                    address += read_2_bytes (line_ptr);
+                    line_ptr += 2;
+                    break;
+                default:
+                    {
+                        /* Unknown standard opcode, ignore it.  */
+                        int i;
+
+                        for (i = 0; i < lh->standard_opcode_lengths[op_code]; i++)
+                        {
+                            (void) read_unsigned_leb128 (line_ptr, &bytes_read);
+                            line_ptr += bytes_read;
+                        }
+                    }
+            }
+        }
+    }
+
+    //if (decode_for_pst_p)
+    //{
+    //    int file_index;
+
+    //    /* Now that we're done scanning the Line Header Program, we can
+    //       create the psymtab of each included file.  */
+    //    for (file_index = 0; file_index < lh->num_file_names; file_index++)
+    //        if (lh->file_names[file_index].included_p == 1)
+    //        {
+    //            const struct file_entry fe = lh->file_names [file_index];
+    //            char *include_name = fe.name;
+    //            char *dir_name = NULL;
+    //            char *pst_filename = pst->filename;
+
+    //            if (fe.dir_index)
+    //                dir_name = lh->include_dirs[fe.dir_index - 1];
+
+    //            if (!IS_ABSOLUTE_PATH (include_name) && dir_name != NULL)
+    //            {
+    //                include_name = concat (dir_name, SLASH_STRING,
+    //                        include_name, (char *)NULL);
+    //                make_cleanup (xfree, include_name);
+    //            }
+
+    //            /* APPLE LOCAL: Re-check include_name to make sure it is absolute 
+    //               before making the psymtab filename absolute since "dir_name" 
+    //               can be a relative path.  */
+    //            if (IS_ABSOLUTE_PATH (include_name) 
+    //                    && !IS_ABSOLUTE_PATH (pst_filename) 
+    //                    && pst->dirname != NULL)
+    //            {
+    //                pst_filename = concat (pst->dirname, SLASH_STRING,
+    //                        pst_filename, (char *)NULL);
+    //                make_cleanup (xfree, pst_filename);
+    //            }
+
+    //            if (strcmp (include_name, pst_filename) != 0)
+    //                dwarf2_create_include_psymtab (include_name, pst, objfile);
+    //        }
+    //}
+    return current_subfile;
+    /* APPLE LOCAL */
+    //if (debug_debugmap)
+    //    fprintf_unfiltered (gdb_stdlog,
+    //            "debugmap: finished reading line program for %s\n",
+    //            cu->per_cu->psymtab->filename);
+}
+
 
 
 static void set_cu_language (unsigned int lang, struct dwarf2_cu *cu)
@@ -642,7 +1760,7 @@ int parse_macho(const char *filename){
         return 0;
     }
 
-//    printf("Parsing Mach Header\n");
+    //    printf("Parsing Mach Header\n");
 
     struct mach_header mh = {0};
     int rc = 0;
@@ -748,125 +1866,6 @@ int parse_macho(const char *filename){
 
 /* Return a pointer to just past the end of an LEB128 number in BUF.  */
 
-static char * skip_leb128 (unsigned char *buf)
-{
-    int byte;
-
-    while (1)
-    {
-        byte = *buf;
-        buf++;
-        if ((byte & 128) == 0)
-            return buf;
-    }
-}
-
-
-
-
-
-
-
-
-
-long long read_signed_leb128(unsigned char* leb128, unsigned int* leb128_length)
-{
-    signed long long number = 0;
-    int sign = 0;
-    signed long shift = 0;
-    unsigned char byte = *leb128;
-    signed long byte_length = 1;
-
-    /*  byte_length being the number of bytes of data absorbed so far in 
-     *         turning the leb into a Dwarf_Signed. */
-
-    for (;;) {
-        sign = byte & 0x40;
-        number |= ((signed long long) ((byte & 0x7f))) << shift;
-        shift += 7;
-
-        if ((byte & 0x80) == 0) {
-            break;
-        }
-        ++leb128;
-        byte = *leb128;
-        byte_length++;
-    }
-
-    if ((shift < sizeof(signed long long) * 8) && sign) {
-        number |= -((signed long long) 1 << shift);
-    }
-
-    if (leb128_length != NULL)
-        *leb128_length = byte_length;
-    return (number);
-}
-
-
-unsigned long long read_unsigned_leb128(unsigned char* leb128, unsigned int* leb128_length)
-{
-    unsigned char byte;
-    unsigned long word_number;
-    unsigned long long number;
-    signed long shift;
-    signed long byte_length;
-
-    /*  The following unrolls-the-loop for the first few bytes and
-     *  unpacks into 32 bits to make this as fast as possible.
-     *  word_number is assumed big enough that the shift has a defined
-     *  result. */
-    if ((*leb128 & 0x80) == 0) {
-        if (leb128_length != NULL)
-            *leb128_length = 1;
-        return (*leb128);
-    } else if ((*(leb128 + 1) & 0x80) == 0) {
-        if (leb128_length != NULL)
-            *leb128_length = 2;
-
-        word_number = *leb128 & 0x7f;
-        word_number |= (*(leb128 + 1) & 0x7f) << 7;
-        return (word_number);
-    } else if ((*(leb128 + 2) & 0x80) == 0) {
-        if (leb128_length != NULL)
-            *leb128_length = 3;
-
-        word_number = *leb128 & 0x7f;
-        word_number |= (*(leb128 + 1) & 0x7f) << 7;
-        word_number |= (*(leb128 + 2) & 0x7f) << 14;
-        return (word_number);
-    } else if ((*(leb128 + 3) & 0x80) == 0) {
-        if (leb128_length != NULL)
-            *leb128_length = 4;
-
-        word_number = *leb128 & 0x7f;
-        word_number |= (*(leb128 + 1) & 0x7f) << 7;
-        word_number |= (*(leb128 + 2) & 0x7f) << 14;
-        word_number |= (*(leb128 + 3) & 0x7f) << 21;
-        return (word_number);
-    }
-
-    /*  The rest handles long numbers Because the 'number' may be larger 
-     *  than the default int/unsigned, we must cast the 'byte' before
-     *  the shift for the shift to have a defined result. */
-    number = 0;
-    shift = 0;
-    byte_length = 1;
-    byte = *(leb128);
-    for (;;) {
-        number |= ((unsigned int) (byte & 0x7f)) << shift;
-
-        if ((byte & 0x80) == 0) {
-            if (leb128_length != NULL)
-                *leb128_length = byte_length;
-            return (number);
-        }
-        shift += 7;
-
-        byte_length++;
-        ++leb128;
-        byte = *leb128;
-    }
-}
 unsigned int get_num_attr_spec_pair(unsigned char* info_ptr){
     unsigned int bytes_read = 0;
     unsigned int num_attr_spec_pair = 0;
@@ -886,110 +1885,6 @@ unsigned int get_num_attr_spec_pair(unsigned char* info_ptr){
 
 void free_dwarf_abbrev(){
 
-}
-
-CORE_ADDR read_signed_16(char *buf){
-    //FIXME
-    return (*buf + (*buf << 8));
-}
-
-signed int read_signed_32(unsigned char *info_ptr){
-    signed int ret = 0;
-    ret = info_ptr[3];
-    ret = (ret << 8) + info_ptr[2];
-    ret = (ret << 8) + info_ptr[1];
-    ret = (ret << 8) + info_ptr[0];
-    return ret;
-}
-
-static unsigned int read_1_byte (unsigned char *info_ptr)
-{
-    return *info_ptr;
-}
-
-//static int
-//read_1_signed_byte (bfd *abfd, char *buf)
-//{
-//  return bfd_get_signed_8 (abfd, (bfd_byte *) buf);
-//}
-
-static unsigned int read_2_bytes (unsigned char *info_ptr)
-{
-    //read bytes little endian?
-    unsigned short ret = 0;
-    ret = info_ptr[1];
-    ret = (ret << 8) + info_ptr[0];
-    return ret;
-}
-
-//static int
-//read_2_signed_bytes (bfd *abfd, char *buf)
-//{
-//  return bfd_get_signed_16 (abfd, (bfd_byte *) buf);
-//}
-
-static unsigned int read_4_bytes (unsigned char *info_ptr)
-{
-    unsigned int ret = 0;
-    ret = info_ptr[3];
-    //printf("ret: %x\n", ret);
-    //printf("info_ptr: %x\n", (unsigned char)info_ptr[3]);
-    ret = (ret << 8) + info_ptr[2];
-    //printf("ret: %x\n", ret);
-    //printf("info_ptr: %x\n", (unsigned char)info_ptr[2]);
-    ret = (ret << 8) + info_ptr[1];
-    //printf("ret: %x\n", ret);
-    //printf("info_ptr: %x\n", (unsigned char)info_ptr[1]);
-    ret = (ret << 8) + info_ptr[0];
-    //printf("ret: %x\n", ret);
-    //printf("info_ptr: %x\n", (unsigned char)info_ptr[0]);
-    //printf("\n");
-    return ret;
-}
-
-//static int
-//read_4_signed_bytes (bfd *abfd, char *buf)
-//{
-//  return bfd_get_signed_32 (abfd, (bfd_byte *) buf);
-//}
-
-static unsigned long read_8_bytes (unsigned char *info_ptr)
-{
-    //read bytes little endian?
-    unsigned long ret = 0;
-    ret = info_ptr[7];
-    ret = (ret << 8) + info_ptr[6];
-    ret = (ret << 8) + info_ptr[5];
-    ret = (ret << 8) + info_ptr[4];
-    ret = (ret << 8) + info_ptr[3];
-    ret = (ret << 8) + info_ptr[2];
-    ret = (ret << 8) + info_ptr[1];
-    ret = (ret << 8) + info_ptr[0];
-    return ret;
-}
-
-unsigned int read_unsigned_int(unsigned char *info_ptr){
-    //read bytes little endian?
-    unsigned int ret = 0;
-    ret = info_ptr[3];
-    ret = (ret << 8) + info_ptr[2];
-    ret = (ret << 8) + info_ptr[1];
-    ret = (ret << 8) + info_ptr[0];
-    return ret;
-}
-
-unsigned short read_unsigned_short(unsigned char *info_ptr){
-    //read bytes little endian?
-    unsigned short ret = 0;
-    ret = info_ptr[1];
-    ret = (ret << 8) + info_ptr[0];
-    return ret;
-}
-
-read_unsigned_char(unsigned char *info_ptr){
-    unsigned char ret = 0;
-    ret = info_ptr[0];
-    return ret;
 }
 
 
@@ -1443,53 +2338,6 @@ static CORE_ADDR read_address_of_arange (char *buf, struct arange *arange, int *
 //    return (*buf + *(buf+1) << 8 + *(buf + 2) << 16 + *(buf + 3) << 24);
 //}
 //FIXME add cu_header->addr_size
-static CORE_ADDR read_address_of_cu (char *buf, struct dwarf2_cu *cu, int *bytes_read)
-{
-    struct comp_unit_head *cu_header = &cu->header;
-    CORE_ADDR retval = 0;
-
-    //if (cu_header->signed_addr_p)
-    //{
-    switch (cu_header->addr_size)
-    {
-        case 2:
-            //unsigned
-            retval = read_signed_16(buf);
-            break;
-        case 4:
-            retval = read_signed_32(buf);
-            break;
-            //case 8:
-            //    retval = bfd_get_signed_64 (abfd, (bfd_byte *) buf);
-            //    break;
-        default:
-            printf("read address: bad switch, signed\n");
-    }
-    //}
-    //else
-    //{
-    //    switch (cu_header->addr_size)
-    //    {
-    //        case 2:
-    //            retval = bfd_get_16 (abfd, (bfd_byte *) buf);
-    //            break;
-    //        case 4:
-    //            retval = bfd_get_32 (abfd, (bfd_byte *) buf);
-    //            break;
-    //        case 8:
-    //            retval = bfd_get_64 (abfd, (bfd_byte *) buf);
-    //            break;
-    //        default:
-    //            internal_error (__FILE__, __LINE__,
-    //                    _("read_address_of_cu: bad switch, unsigned [in module %s]"),
-    //                    bfd_get_filename (abfd));
-    //    }
-    //}
-
-    *bytes_read = cu_header->addr_size;
-    return retval;
-}
-
 
 /* memory allocation interface */
 
@@ -1502,40 +2350,6 @@ static struct dwarf_block * dwarf_alloc_block (struct dwarf2_cu *cu)
     return (blk);
 }
 
-
-static char * read_string (char *buf, unsigned int *bytes_read_ptr)
-{
-    if (*buf == '\0')
-    {
-        *bytes_read_ptr = 1;
-        return NULL;
-    }
-    *bytes_read_ptr = strlen (buf) + 1;
-    return buf;
-}
-/* Read an offset from the data stream.  The size of the offset is
-   given by cu_header->offset_size.  */
-
-static long read_offset (char *buf, const struct comp_unit_head *cu_header, int *bytes_read)
-{
-    long retval = 0;
-
-    switch (cu_header->offset_size)
-    {
-        case 4:
-            retval = read_4_bytes(buf);
-            *bytes_read = 4;
-            break;
-        case 8:
-            retval = read_8_bytes(buf);
-            *bytes_read = 8;
-            break;
-        default:
-            printf("read_offset: bad switch\n");
-    }
-
-    return retval;
-}
 
 
 static char * read_indirect_string (char *buf, const struct comp_unit_head *cu_header, unsigned int *bytes_read_ptr, char *debug_str_buffer)
@@ -1744,11 +2558,11 @@ static char * read_full_die (struct die_info **diep, unsigned char *info_ptr,
 
     die->num_attrs = abbrev->num_attrs;
     die->attrs = (struct attribute *)malloc (die->num_attrs * sizeof (struct attribute));
-//    printf("%s\n", dwarf_tag_name(die->tag));
+    //    printf("%s\n", dwarf_tag_name(die->tag));
 
     for (i = 0; i < abbrev->num_attrs; ++i){
         info_ptr = read_attribute (&die->attrs[i], &abbrev->attrs[i], info_ptr, cu);
-//        printf("%s\t %s\n", dwarf_attr_name(die->attrs[i].name), dwarf_form_name(die->attrs[i].form));
+        //        printf("%s\t %s\n", dwarf_attr_name(die->attrs[i].name), dwarf_form_name(die->attrs[i].form));
 
         //   /* APPLE LOCAL begin dwarf repository  */
         //   if (die->attrs[i].name == DW_AT_APPLE_repository_file)
@@ -1946,160 +2760,74 @@ static void load_comp_unit(unsigned char* info_ptr){
 
 static struct dwarf2_cu * load_full_comp_unit (struct dwarf2_per_cu_data *per_cu)
 {
-  //struct partial_symtab *pst = per_cu->psymtab;
-  //bfd *abfd = pst->objfile->obfd;
-  struct dwarf2_cu *cu;
-  unsigned long offset;
-  char *info_ptr;
-  //`struct cleanup *back_to, *free_cu_cleanup;
-  struct attribute *attr;
-  /* APPLE LOCAL avoid unused var warning. */
-  /* CORE_ADDR baseaddr; */
+    //struct partial_symtab *pst = per_cu->psymtab;
+    //bfd *abfd = pst->objfile->obfd;
+    struct dwarf2_cu *cu;
+    unsigned long offset;
+    char *info_ptr;
+    //`struct cleanup *back_to, *free_cu_cleanup;
+    struct attribute *attr;
+    /* APPLE LOCAL avoid unused var warning. */
+    /* CORE_ADDR baseaddr; */
 
-  /* Set local variables from the partial symbol table info.  */
-  offset = per_cu->offset;
-  //printf("offset: %08lx\n", offset);
+    /* Set local variables from the partial symbol table info.  */
+    offset = per_cu->offset;
+    //printf("offset: %08lx\n", offset);
 
-  info_ptr = dwarf2_per_objfile->info_buffer + offset;
+    info_ptr = dwarf2_per_objfile->info_buffer + offset;
 
-  cu = malloc (sizeof (struct dwarf2_cu));
-  memset (cu, 0, sizeof (struct dwarf2_cu));
+    cu = malloc (sizeof (struct dwarf2_cu));
+    memset (cu, 0, sizeof (struct dwarf2_cu));
 
-  /* If an error occurs while loading, release our storage.  */
-  //free_cu_cleanup = make_cleanup (free_one_comp_unit, cu);
+    /* If an error occurs while loading, release our storage.  */
+    //free_cu_cleanup = make_cleanup (free_one_comp_unit, cu);
 
-  //cu->objfile = pst->objfile;
+    //cu->objfile = pst->objfile;
 
-  /* read in the comp_unit header  */
-  info_ptr = read_comp_unit_head (&cu->header, info_ptr);
+    /* read in the comp_unit header  */
+    info_ptr = read_comp_unit_head (&cu->header, info_ptr);
 
-  /* Read the abbrevs for this compilation unit  */
-  //dwarf2_read_abbrevs (cu);
-  cu->dwarf2_abbrevs = dwarf2_abbrevs;
-  
+    /* Read the abbrevs for this compilation unit  */
+    //dwarf2_read_abbrevs (cu);
+    cu->dwarf2_abbrevs = dwarf2_abbrevs;
 
-//  back_to = make_cleanup (dwarf2_free_abbrev_table, cu);
 
-  cu->header.offset = offset;
+    //  back_to = make_cleanup (dwarf2_free_abbrev_table, cu);
 
-  /* APPLE LOCAL debug map */
-  //cu->addr_map = addr_map;
+    cu->header.offset = offset;
 
-  cu->per_cu = per_cu;
-  per_cu->cu = cu;
+    /* APPLE LOCAL debug map */
+    //cu->addr_map = addr_map;
 
-  /* We use this obstack for block values in dwarf_alloc_block.  */
-  //obstack_init (&cu->comp_unit_obstack);
+    cu->per_cu = per_cu;
+    per_cu->cu = cu;
 
-  cu->dies = read_comp_unit (info_ptr, cu);
+    /* We use this obstack for block values in dwarf_alloc_block.  */
+    //obstack_init (&cu->comp_unit_obstack);
 
-  /* We try not to read any attributes in this function, because not
-     all objfiles needed for references have been loaded yet, and symbol
-     table processing isn't initialized.  But we have to set the CU language,
-     or we won't be able to build types correctly.  */
-  //attr = dwarf2_attr (cu->dies, DW_AT_language, cu);
-  //if (attr)
-  //  set_cu_language (attr->u.unsnd., cu);
-  //else
-  //  set_cu_language (language_minimal, cu);
+    cu->dies = read_comp_unit (info_ptr, cu);
 
-  //do_cleanups (back_to);
+    /* We try not to read any attributes in this function, because not
+       all objfiles needed for references have been loaded yet, and symbol
+       table processing isn't initialized.  But we have to set the CU language,
+       or we won't be able to build types correctly.  */
+    //attr = dwarf2_attr (cu->dies, DW_AT_language, cu);
+    //if (attr)
+    //  set_cu_language (attr->u.unsnd., cu);
+    //else
+    //  set_cu_language (language_minimal, cu);
 
-  /* We've successfully allocated this compilation unit.  Let our caller
-     clean it up when finished with it.  */
-  //discard_cleanups (free_cu_cleanup);
+    //do_cleanups (back_to);
 
-  return cu;
+    /* We've successfully allocated this compilation unit.  Let our caller
+       clean it up when finished with it.  */
+    //discard_cleanups (free_cu_cleanup);
+
+    return cu;
 }
 
 /* Generate full symbol information for PST and CU, whose DIEs have
    already been loaded into memory.  */
-
-
-/* Read the initial length from a section.  The (draft) DWARF 3
-   specification allows the initial length to take up either 4 bytes
-   or 12 bytes.  If the first 4 bytes are 0xffffffff, then the next 8
-   bytes describe the length and all offsets will be 8 bytes in length
-   instead of 4.
-
-   An older, non-standard 64-bit format is also handled by this
-   function.  The older format in question stores the initial length
-   as an 8-byte quantity without an escape value.  Lengths greater
-   than 2^32 aren't very common which means that the initial 4 bytes
-   is almost always zero.  Since a length value of zero doesn't make
-   sense for the 32-bit format, this initial zero can be considered to
-   be an escape value which indicates the presence of the older 64-bit
-   format.  As written, the code can't detect (old format) lengths
-   greater than 4GB.  If it becomes necessary to handle lengths
-   somewhat larger than 4GB, we could allow other small values (such
-   as the non-sensical values of 1, 2, and 3) to also be used as
-   escape values indicating the presence of the old format.
-
-   The value returned via bytes_read should be used to increment the
-   relevant pointer after calling read_initial_length_of_comp_unit().
-
-   As a side effect, this function sets the fields initial_length_size
-   and offset_size in cu_header to the values appropriate for the
-   length field.  (The format of the initial length field determines
-   the width of file offsets to be fetched later with read_offset().)
-
-   [ Note:  read_initial_length_of_comp_unit() and read_offset() are based on the
-   document entitled "DWARF Debugging Information Format", revision
-   3, draft 8, dated November 19, 2001.  This document was obtained
-from:
-
-http://reality.sgiweb.org/davea/dwarf3-draft8-011125.pdf
-
-This document is only a draft and is subject to change.  (So beware.)
-
-Details regarding the older, non-standard 64-bit format were
-determined empirically by examining 64-bit ELF files produced by
-the SGI toolchain on an IRIX 6.5 machine.
-
-- Kevin, July 16, 2002
-] */
-static long read_initial_length_of_aranges(char *buf, struct aranges_header *aranges_header, int *bytes_read){
-    long length = read_4_bytes(buf);
-    return length;
-}
-static long read_initial_length_of_comp_unit (char *buf, struct comp_unit_head *cu_header,
-        int *bytes_read)
-{
-    long length = read_4_bytes(buf);
-
-    if (length == 0xffffffff)
-    {
-        length = read_8_bytes(buf + 4);
-        *bytes_read = 12;
-    }
-    else if (length == 0)
-    {
-        /* Handle the (non-standard) 64-bit DWARF2 format used by IRIX.  */
-        length = read_8_bytes(buf + 4);
-        *bytes_read = 8;
-    }
-    else
-    {
-        *bytes_read = 4;
-    }
-
-    if (cu_header)
-    {
-        assert (cu_header->initial_length_size == 0
-                || cu_header->initial_length_size == 4
-                || cu_header->initial_length_size == 8
-                || cu_header->initial_length_size == 12);
-
-        if (cu_header->initial_length_size != 0 && cu_header->initial_length_size != *bytes_read){
-            printf("asset error ...\n");
-        }
-
-        cu_header->initial_length_size = *bytes_read;
-        cu_header->offset_size = (*bytes_read == 4) ? 4 : 8;
-    }
-
-    return length;
-}
 
 
 /* Create a list of all compilation units in OBJFILE.  We do this only
@@ -2306,7 +3034,7 @@ void print_aranges(struct arange **all_aranges, unsigned int num){
 
 static void create_all_aranges()
 {
-    
+
     int n_allocated;
     int n_aranges;
     struct arange **all_aranges;
@@ -2322,19 +3050,19 @@ static void create_all_aranges()
     while (aranges_ptr < dwarf2_per_objfile->aranges_buffer+ dwarf2_per_objfile->aranges_size)
     {
         //struct aranges_header aranges_header;
-    //    /* APPLE LOCAL avoid unused var warning.  */
-    //    /* char *beg_of_comp_unit; */
-    //    struct dwarf2_per_cu_data *this_cu;
+        //    /* APPLE LOCAL avoid unused var warning.  */
+        //    /* char *beg_of_comp_unit; */
+        //    struct dwarf2_per_cu_data *this_cu;
         unsigned long offset;
         int bytes_read;
 
         offset = aranges_ptr - dwarf2_per_objfile->aranges_buffer;
 
-    //    /* Read just enough information to find out where the next
-    //       compilation unit is.  */
-    //    cu_header.initial_length_size = 0;
-    //    cu_header.length = read_initial_length (info_ptr, &cu_header, &bytes_read);
-        
+        //    /* Read just enough information to find out where the next
+        //       compilation unit is.  */
+        //    cu_header.initial_length_size = 0;
+        //    cu_header.length = read_initial_length (info_ptr, &cu_header, &bytes_read);
+
         struct arange *arange = malloc(sizeof(struct arange));
         memset(arange, 0, sizeof(struct arange));
 
@@ -2352,7 +3080,7 @@ static void create_all_aranges()
 
         arange->aranges_header.seg_size = read_1_byte(aranges_ptr);
         aranges_ptr += 1;
-        
+
         //FIXME 4 additional null bytes
         unsigned int zeros = read_4_bytes(aranges_ptr);
         assert(zeros == 0);
@@ -2377,16 +3105,16 @@ static void create_all_aranges()
             arange->address_range_descriptors[i].length = read_4_bytes(aranges_ptr);
             aranges_ptr += 4;
 
-        //    printf("beginning_addr: 0X%X\t", arange->address_range_descriptors[i].beginning_addr);
-        //    printf("length: 0X%X\n", arange->address_range_descriptors[i].length);
+            //    printf("beginning_addr: 0X%X\t", arange->address_range_descriptors[i].beginning_addr);
+            //    printf("length: 0X%X\n", arange->address_range_descriptors[i].length);
         }
         //skip ending zeros
         aranges_ptr += 8;
-    //    /* Save the compilation unit for later lookup.  */
-    //    this_cu = malloc(sizeof (struct dwarf2_per_cu_data));
-    //    memset (this_cu, 0, sizeof (*this_cu));
-    //    this_cu->offset = offset;
-    //    this_cu->length = cu_header.length + cu_header.initial_length_size;
+        //    /* Save the compilation unit for later lookup.  */
+        //    this_cu = malloc(sizeof (struct dwarf2_per_cu_data));
+        //    memset (this_cu, 0, sizeof (*this_cu));
+        //    this_cu->offset = offset;
+        //    this_cu->length = cu_header.length + cu_header.initial_length_size;
 
         if (n_aranges == n_allocated)
         {
@@ -2395,9 +3123,9 @@ static void create_all_aranges()
         }
         all_aranges[n_aranges++] = arange;
 
-    //    info_ptr = info_ptr + this_cu->length;
-    //    //printf("%p %p\n",info_ptr , dwarf2_per_objfile->info_buffer + dwarf2_per_objfile->info_size);
-   }
+        //    info_ptr = info_ptr + this_cu->length;
+        //    //printf("%p %p\n",info_ptr , dwarf2_per_objfile->info_buffer + dwarf2_per_objfile->info_size);
+    }
 
     //dwarf2_per_objfile->all_comp_units = malloc (n_comp_units * sizeof (struct dwarf2_per_cu_data *));
     dwarf2_per_objfile->all_aranges = malloc (n_aranges * sizeof (struct arange*));
@@ -2411,7 +3139,7 @@ static void create_all_aranges()
 void parse_dwarf_aranges(){
     create_all_aranges();
     //print_aranges(dwarf2_per_objfile->all_aranges, dwarf2_per_objfile->n_aranges);
-//    struct aranges_header;
+    //    struct aranges_header;
 }
 
 int is_target_subprogram(struct die_info *die, struct address_range_descriptor *target_ard){
@@ -2436,20 +3164,18 @@ int is_target_subprogram(struct die_info *die, struct address_range_descriptor *
 }
 
 struct die_info *find_target_subprogram(struct die_info *die, struct address_range_descriptor *target_ard){
-    while(die != NULL){
-        if(die->tag == DW_TAG_subprogram){
-            if(is_target_subprogram(die, target_ard) == 1){
-                return die;
-            }
+    if(die->tag == DW_TAG_subprogram){
+        if(is_target_subprogram(die, target_ard) == 1){
+            return die;
         }
-        
-        if(die->sibling != NULL){
-            return find_target_subprogram(die->sibling, target_ard); 
-        }
+    }
 
-        if(die->child != NULL){
-            return find_target_subprogram(die->child, target_ard); 
-        }
+    if(die->sibling != NULL){
+        return find_target_subprogram(die->sibling, target_ard); 
+    }
+
+    if(die->child != NULL){
+        return find_target_subprogram(die->child, target_ard); 
     }
     return NULL;
 
@@ -2462,10 +3188,47 @@ char *get_name_attribute(struct die_info *die){
         }
     }
     return NULL;
-
 }
 
-void lookup_by_address(CORE_ADDR address){
+unsigned int get_stmt_list_attribute(struct die_info *die, char *flag){
+    unsigned int i = 0;
+    for(i = 0; i < die->num_attrs; i++){
+        if (die->attrs[i].name == DW_AT_stmt_list){
+            return die->attrs[i].u.addr;
+        }
+    }
+    *flag = 1;
+    return 0;
+}
+
+
+void print_line_vector(struct subfile *subfile){
+    struct linetable_entry *e;
+    int i = 0;
+    for(i = 0; i < subfile->line_vector->nitems; i ++){
+      e = subfile->line_vector->item + i;
+      printf("address: 0x%08x line: %d\n", e->pc, e->line);
+    }
+}
+
+
+int get_lineno_for_address(struct subfile *subfile, CORE_ADDR address){
+    struct linetable_entry *current_entry;
+    struct linetable_entry *next_entry;
+    int i = 0;
+    for(i = 0; i < subfile->line_vector->nitems; i ++){
+      current_entry = subfile->line_vector->item + i;
+      next_entry = subfile->line_vector->item + i + 1;
+      if(address >= current_entry->pc && address < next_entry->pc ){
+            return current_entry ->line;
+      }
+    }
+    return 0;
+}
+
+
+
+char *lookup_by_address(CORE_ADDR address){
     unsigned int num = dwarf2_per_objfile->n_aranges;
     struct arange **all_aranges = dwarf2_per_objfile->all_aranges; 
     struct arange *target_arange = NULL;
@@ -2473,6 +3236,7 @@ void lookup_by_address(CORE_ADDR address){
     unsigned int i = 0, j = 0;
     for(i = 0; i< num; i++){
         struct arange *arange = all_aranges[i];
+        //printf("0x%08x + 0x%08x = 0x%08x\n", arange->address_range_descriptors[j].beginning_addr, arange->address_range_descriptors[j].length, arange->address_range_descriptors[j].beginning_addr + arange->address_range_descriptors[j].length);
         for(j = 0; j < arange->num_of_ards; j++){
             CORE_ADDR beginning_addr = arange->address_range_descriptors[j].beginning_addr;
             CORE_ADDR ending_addr = arange->address_range_descriptors[j].beginning_addr + arange->address_range_descriptors[j].length;
@@ -2483,11 +3247,15 @@ void lookup_by_address(CORE_ADDR address){
             }
         }
     }
-    struct arange *arange = target_arange;
-    //printf("Address Range Header: length = 0x%08x  version = 0x%04x  cu_offset = 0x%08x  addr_size = 0x%02x  seg_size = 0x%02x\n", arange->aranges_header.length, arange->aranges_header.version, arange->aranges_header.info_offset, arange->aranges_header.addr_size, arange->aranges_header.seg_size);
-    for (j = 0; j < arange->num_of_ards; j++){
-        //printf("0x%08x + 0x%08x = 0x%08x\n", arange->address_range_descriptors[j].beginning_addr, arange->address_range_descriptors[j].length, arange->address_range_descriptors[j].beginning_addr + arange->address_range_descriptors[j].length);
+    //struct arange *arange = target_arange;
+    if(target_arange == NULL){
+        printf("target_arange is NULL\n\n");
+        return NULL;
     }
+    //printf("Address Range Header: length = 0x%08x  version = 0x%04x  cu_offset = 0x%08x  addr_size = 0x%02x  seg_size = 0x%02x\n", arange->aranges_header.length, arange->aranges_header.version, arange->aranges_header.info_offset, arange->aranges_header.addr_size, arange->aranges_header.seg_size);
+   //for (j = 0; j < arange->num_of_ards; j++){
+        //printf("0x%08x + 0x%08x = 0x%08x\n", arange->address_range_descriptors[j].beginning_addr, arange->address_range_descriptors[j].length, arange->address_range_descriptors[j].beginning_addr + arange->address_range_descriptors[j].length);
+    //}
 
     //find the target compilation unit 
     struct dwarf2_per_cu_data *target_dwarf2_per_cu_data= NULL;
@@ -2500,8 +3268,13 @@ void lookup_by_address(CORE_ADDR address){
     }
     struct dwarf2_cu *target_cu = target_dwarf2_per_cu_data->cu;
     printf("compilation unit dir: %s\n", target_cu->comp_dir);
-
+    
+    
     struct die_info *target_die = find_target_subprogram(target_cu->dies, target_ard);
+    if(target_die == NULL){
+        printf("Can not find target subprogram.\n");
+        return;
+    }
     char *target_program_full_name = get_name_attribute(target_cu->dies);
     char *target_program_name = strrchr(target_program_full_name, '/');
     if(target_program_name == NULL){
@@ -2509,11 +3282,25 @@ void lookup_by_address(CORE_ADDR address){
     }else{
         target_program_name = target_program_name +1;
     }
-
     char *target_subprogram_name = get_name_attribute(target_die);
     printf("target_program_full_name: %s\n", target_program_full_name);
     printf("target_program_name: %s\n", target_program_name);
     printf("target_subprogram_name: %s\n", target_subprogram_name);
+
+    printf("Lookup address infomation\n");
+    char flag;
+    unsigned int offset = get_stmt_list_attribute(target_cu->dies, &flag);
+    if(flag == 1){
+        printf("do not have stmt_list attribute\n");
+    }else{
+       printf("offset: 0x%08x\n", offset);
+    }
+    struct line_header *lh = dwarf_decode_line_header (offset, target_cu);
+    struct subfile * current_subfile = dwarf_decode_lines (lh, NULL, target_cu);
+    //print_line_vector(current_subfile);
+    int lineno = get_lineno_for_address(current_subfile, address);
+    printf("lineno: %d\n",lineno);
+    printf("%s (in %s) (%s:%d)\n", target_subprogram_name, project_name, target_program_name, lineno);
 }
 
 int parse_dwarf2_per_objfile(){
@@ -2523,12 +3310,21 @@ int parse_dwarf2_per_objfile(){
     parse_dwarf_info();
     parse_dwarf_aranges();
 
-    lookup_by_address(0x0000a87b);
+    char *address_info = NULL;
+    //address_info = lookup_by_address(0x0000a87b);
+    printf("==============================\n");
+    address_info = lookup_by_address(0x00001d3d);
+    printf("==============================\n");
+    address_info = lookup_by_address(0x00001c75);
+    printf("==============================\n");
+    address_info = lookup_by_address(0x00002126);
+    printf("==============================\n");
+    //address_info = lookup_by_address(0x00001c75);
 }
 
 int parse_load_command(FILE *fp, struct load_command *lcp){
     long offset = 0L - sizeof(struct load_command);
-//    printf("Command: %u\n", lcp->cmd);
+    //    printf("Command: %u\n", lcp->cmd);
     switch (lcp->cmd){
         case LC_UUID: 
             //printf("load command type: %s\n", "LC_UUID");
@@ -2621,7 +3417,7 @@ int parse_load_command(FILE *fp, struct load_command *lcp){
 }
 
 int process_lc_data_in_code(FILE *fp, long offset){
-//    printf("parsing LC_DATA_IN_CODE\n");
+    //    printf("parsing LC_DATA_IN_CODE\n");
     struct lc_data_in_code command = {0};
     int rc = 0;
     int seekreturn = 0;
@@ -2640,7 +3436,7 @@ int process_lc_data_in_code(FILE *fp, long offset){
 }
 
 int process_lc_function_starts(FILE *fp, long offset){
-//    printf("parsing LC_FUNCTION_STARTS\n");
+    //    printf("parsing LC_FUNCTION_STARTS\n");
     struct lc_function_starts command = {0};
     int rc = 0;
     int seekreturn = 0;
@@ -2652,7 +3448,7 @@ int process_lc_function_starts(FILE *fp, long offset){
         //printf("cmd: %u\n", command.cmd);
         //printf("cmdsize: %u\n", command.cmdsize);
     }
-//    printf("\n");
+    //    printf("\n");
     seekreturn = fseek(fp, (command.cmdsize - sizeof(struct lc_function_starts)), SEEK_CUR);
     assert(seekreturn == 0);
     return 0;
@@ -2660,7 +3456,7 @@ int process_lc_function_starts(FILE *fp, long offset){
 }
 
 int process_lc_uuid(FILE *fp, long offset){
-//    printf("parsing LC_UUID\n");
+    //    printf("parsing LC_UUID\n");
     struct uuid_command command = {0};
     int rc = 0;
     int seekreturn = 0;
@@ -2687,7 +3483,7 @@ int process_lc_uuid(FILE *fp, long offset){
 }
 
 int process_lc_segment(FILE *fp, long offset){
-//    printf("parsing LC_SEGMENT\n");
+    //    printf("parsing LC_SEGMENT\n");
     struct segment_command command = {0};
     int rc = 0;
     int seekreturn = 0;
@@ -2748,7 +3544,7 @@ int process_lc_routines(FILE *fp, long offset){
 }
 
 int process_lc_id_dylinker(FILE *fp, long offset){
-//    printf("parsing LC_ID_DYLINKER\n");
+    //    printf("parsing LC_ID_DYLINKER\n");
     struct dylinker_command command = {0};
     int rc = 0;
     int seekreturn = 0;
@@ -2767,7 +3563,7 @@ int process_lc_id_dylinker(FILE *fp, long offset){
 
 }
 int process_lc_load_dylinker(FILE *fp, long offset){
-//    printf("parsing LC_LOAD_DYLINKER\n");
+    //    printf("parsing LC_LOAD_DYLINKER\n");
     struct dylinker_command command = {0};
     int rc = 0;
     int seekreturn = 0;
@@ -2796,7 +3592,7 @@ int process_lc_id_dylib(FILE *fp, long offset){
 
 }
 int process_lc_load_dylib(FILE *fp, long offset){
-//    printf("parsing LC_LOAD_DYLIB\n");
+    //    printf("parsing LC_LOAD_DYLIB\n");
     struct dylib_command command = {0};
     int rc = 0;
     int seekreturn = 0;
@@ -2815,7 +3611,7 @@ int process_lc_load_dylib(FILE *fp, long offset){
 }
 
 int process_lc_thread(FILE *fp, long offset){
-//    printf("parsing LC_THREAD\n");
+    //    printf("parsing LC_THREAD\n");
     struct thread_command command = {0};
     int rc = 0;
     int seekreturn = 0;
@@ -2835,7 +3631,7 @@ int process_lc_thread(FILE *fp, long offset){
 }
 
 int process_lc_unixthread(FILE *fp, long offset){
-//    printf("parsing LC_UNIXTHREAD\n");
+    //    printf("parsing LC_UNIXTHREAD\n");
     struct thread_command command = {0};
     int rc = 0;
     int seekreturn = 0;
@@ -2853,7 +3649,7 @@ int process_lc_unixthread(FILE *fp, long offset){
     return 0;
 }
 int process_lc_dysymtab(FILE *fp, long offset){
-//    printf("parsing LC_DYSYMTAB\n");
+    //    printf("parsing LC_DYSYMTAB\n");
     struct dysymtab_command command = {0};
     int rc = 0;
     int seekreturn = 0;
@@ -2871,7 +3667,7 @@ int process_lc_dysymtab(FILE *fp, long offset){
     return 0;
 }
 int process_lc_symtab(FILE *fp, long offset){
-//    printf("parsing LC_SYMTAB\n");
+    //    printf("parsing LC_SYMTAB\n");
     struct symtab_command command = {0};
     int rc = 0;
     int seekreturn = 0;
@@ -2891,6 +3687,5 @@ int process_lc_symtab(FILE *fp, long offset){
 }
 int process_lc_segment_64(FILE *fp, long offse){
     return 0;
-
 }
 

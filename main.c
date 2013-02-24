@@ -19,20 +19,23 @@
 #include "macho.h"
 
 extern struct data_of_interest doi;
-
+char *project_name;
 int main(int argc, char *argv[]){
     //printf("Start Reading Mach-O File Format\n");
     //parse_macho("/Users/Reno/Quincy/local/QuincyDemo_1_0/QuincyDemo2.app/QuincyDemo");
     //parse_macho("/home/reno/Downloads/QuincyDemo2.app/QuincyDemo");
-    char *full_filename = "/home/reno/Downloads/QuincyDemo.app.dSYM/Contents/Resources/DWARF/QuincyDemo";
+    char *full_filename = "../QuincyDemo";
     char *filename = strrchr(full_filename, '/');
     if(filename == NULL){
         filename = full_filename;
     }else{
         filename = filename + 1;
     }
-    printf("Project Name: %s\n", filename);
-    parse_macho("/home/reno/Downloads/QuincyDemo.app.dSYM/Contents/Resources/DWARF/QuincyDemo");
+    project_name = filename;
+    printf("Project Name: %s\n", project_name);
+    
+    //parse_macho("/home/reno/Downloads/QuincyDemo.app.dSYM/Contents/Resources/DWARF/QuincyDemo");
+    parse_macho("QuincyDemo");
     //printf("vmaddr for text segment: 0x%x\n", doi.text_vmaddr);
 }
 
