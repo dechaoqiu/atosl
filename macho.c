@@ -151,10 +151,10 @@ static struct dwarf2_per_objfile *dwarf2_per_objfile;
 
 struct function_range
 {
-  const char *name;
-  CORE_ADDR lowpc, highpc;
-  int seen_line;
-  struct function_range *next;
+    const char *name;
+    CORE_ADDR lowpc, highpc;
+    int seen_line;
+    struct function_range *next;
 };
 
 
@@ -875,57 +875,57 @@ static long read_initial_length_of_comp_unit (char *buf, struct comp_unit_head *
 
 
 /* Add an entry to LH's include directory table.  */
-static void
+    static void
 add_include_dir (struct line_header *lh, char *include_dir)
 {
-  /* Grow the array if necessary.  */
-  if (lh->include_dirs_size == 0)
+    /* Grow the array if necessary.  */
+    if (lh->include_dirs_size == 0)
     {
-      lh->include_dirs_size = 1; /* for testing */
-      lh->include_dirs = malloc (lh->include_dirs_size * sizeof (*lh->include_dirs));
+        lh->include_dirs_size = 1; /* for testing */
+        lh->include_dirs = malloc (lh->include_dirs_size * sizeof (*lh->include_dirs));
     }
-  else if (lh->num_include_dirs >= lh->include_dirs_size)
+    else if (lh->num_include_dirs >= lh->include_dirs_size)
     {
-      lh->include_dirs_size *= 2;
-      lh->include_dirs = realloc (lh->include_dirs, (lh->include_dirs_size * sizeof (*lh->include_dirs)));
+        lh->include_dirs_size *= 2;
+        lh->include_dirs = realloc (lh->include_dirs, (lh->include_dirs_size * sizeof (*lh->include_dirs)));
     }
 
-  lh->include_dirs[lh->num_include_dirs++] = include_dir;
+    lh->include_dirs[lh->num_include_dirs++] = include_dir;
 }
- 
+
 
 /* Add an entry to LH's file name table.  */
 static void add_file_name (struct line_header *lh,
-               char *name,
-               unsigned int dir_index,
-               unsigned int mod_time,
-               unsigned int length)
+        char *name,
+        unsigned int dir_index,
+        unsigned int mod_time,
+        unsigned int length)
 {
-  struct file_entry *fe;
+    struct file_entry *fe;
 
-  /* Grow the array if necessary.  */
-  if (lh->file_names_size == 0)
+    /* Grow the array if necessary.  */
+    if (lh->file_names_size == 0)
     {
-      lh->file_names_size = 1; /* for testing */
-      lh->file_names = malloc (lh->file_names_size
-                                * sizeof (*lh->file_names));
+        lh->file_names_size = 1; /* for testing */
+        lh->file_names = malloc (lh->file_names_size
+                * sizeof (*lh->file_names));
     }
-  else if (lh->num_file_names >= lh->file_names_size)
+    else if (lh->num_file_names >= lh->file_names_size)
     {
-      lh->file_names_size *= 2;
-      lh->file_names = realloc (lh->file_names,
-                                 (lh->file_names_size
-                                  * sizeof (*lh->file_names)));
+        lh->file_names_size *= 2;
+        lh->file_names = realloc (lh->file_names,
+                (lh->file_names_size
+                 * sizeof (*lh->file_names)));
     }
 
-  fe = &lh->file_names[lh->num_file_names++];
-  fe->name = name;
-  fe->dir_index = dir_index;
-  fe->mod_time = mod_time;
-  fe->length = length;
-  fe->included_p = 0;
+    fe = &lh->file_names[lh->num_file_names++];
+    fe->name = name;
+    fe->dir_index = dir_index;
+    fe->mod_time = mod_time;
+    fe->length = length;
+    fe->included_p = 0;
 }
- 
+
 
 
 
@@ -1031,9 +1031,9 @@ static struct line_header * dwarf_decode_line_header (unsigned int offset, struc
 
     if (line_ptr > (dwarf2_per_objfile->line_buffer
                 + dwarf2_per_objfile->line_size))
-                printf("line number info header doesn't fit in `.debug_line' section\n");
+        printf("line number info header doesn't fit in `.debug_line' section\n");
 
-//    discard_cleanups (back_to);
+    //    discard_cleanups (back_to);
     return lh;
 }
 
@@ -1088,8 +1088,8 @@ static struct line_header * dwarf_decode_line_header (unsigned int offset, struc
 
 struct linetable_entry
 {
-  int line;
-  CORE_ADDR pc;
+    int line;
+    CORE_ADDR pc;
 };
 
 /* The order of entries in the linetable is significant.  They should
@@ -1097,27 +1097,27 @@ struct linetable_entry
    one entry for a given pc, then I'm not sure what should happen (and
    I not sure whether we currently handle it the best way).
 
-   Example: a C for statement generally looks like this
+Example: a C for statement generally looks like this
 
-   10   0x100   - for the init/test part of a for stmt.
-   20   0x200
-   30   0x300
-   10   0x400   - for the increment part of a for stmt.
+10   0x100   - for the init/test part of a for stmt.
+20   0x200
+30   0x300
+10   0x400   - for the increment part of a for stmt.
 
-   If an entry has a line number of zero, it marks the start of a PC
-   range for which no line number information is available.  It is
-   acceptable, though wasteful of table space, for such a range to be
-   zero length.  */
+If an entry has a line number of zero, it marks the start of a PC
+range for which no line number information is available.  It is
+acceptable, though wasteful of table space, for such a range to be
+zero length.  */
 
 struct linetable
 {
-  int nitems;
-  int lines_are_chars;
+    int nitems;
+    int lines_are_chars;
 
-  /* Actually NITEMS elements.  If you don't like this use of the
-     `struct hack', you can shove it up your ANSI (seriously, if the
-     committee tells us how to do it, we can probably go along).  */
-  struct linetable_entry item[1];
+    /* Actually NITEMS elements.  If you don't like this use of the
+       `struct hack', you can shove it up your ANSI (seriously, if the
+       committee tells us how to do it, we can probably go along).  */
+    struct linetable_entry item[1];
 };
 
 /* The list of sub-source-files within the current individual
@@ -1125,7 +1125,7 @@ struct linetable
    and associated info, but they all share one blockvector.  */
 
 struct subfile
-  {
+{
     //struct subfile *next;
     //char *name;
     //char *dirname;
@@ -1133,7 +1133,7 @@ struct subfile
     int line_vector_length;
     enum language language;
     //char *debugformat;
-  };
+};
 
 
 
@@ -1142,60 +1142,60 @@ struct subfile
 
 void record_line (struct subfile *subfile, int line, CORE_ADDR pc)
 {
-  struct linetable_entry *e;
-  /* Ignore the dummy line number in libg.o */
+    struct linetable_entry *e;
+    /* Ignore the dummy line number in libg.o */
 
-  if (line == 0xffff)
+    if (line == 0xffff)
     {
-      return;
-    }
-            
-  /* Make sure line vector exists and is big enough.  */
-  if (!subfile->line_vector)
-    {
-      subfile->line_vector_length = INITIAL_LINE_VECTOR_LENGTH;
-      subfile->line_vector = (struct linetable *) malloc (sizeof (struct linetable) + subfile->line_vector_length * sizeof (struct linetable_entry));
-      subfile->line_vector->nitems = 0;
-      /* APPLE LOCAL codewarrior support */
-      subfile->line_vector->lines_are_chars = 0;
-      //have_line_numbers = 1;
+        return;
     }
 
-  if (subfile->line_vector->nitems + 1 >= subfile->line_vector_length)
+    /* Make sure line vector exists and is big enough.  */
+    if (!subfile->line_vector)
     {
-      subfile->line_vector_length *= 2;
-      subfile->line_vector = (struct linetable *) realloc ((char *) subfile->line_vector,
-		  (sizeof (struct linetable)
-		   + (subfile->line_vector_length
-		      * sizeof (struct linetable_entry))));
+        subfile->line_vector_length = INITIAL_LINE_VECTOR_LENGTH;
+        subfile->line_vector = (struct linetable *) malloc (sizeof (struct linetable) + subfile->line_vector_length * sizeof (struct linetable_entry));
+        subfile->line_vector->nitems = 0;
+        /* APPLE LOCAL codewarrior support */
+        subfile->line_vector->lines_are_chars = 0;
+        //have_line_numbers = 1;
     }
 
-  e = subfile->line_vector->item + subfile->line_vector->nitems++;
-  e->line = line;
-  e->pc = pc;
-//  e->pc = ADDR_BITS_REMOVE(pc);
+    if (subfile->line_vector->nitems + 1 >= subfile->line_vector_length)
+    {
+        subfile->line_vector_length *= 2;
+        subfile->line_vector = (struct linetable *) realloc ((char *) subfile->line_vector,
+                (sizeof (struct linetable)
+                 + (subfile->line_vector_length
+                     * sizeof (struct linetable_entry))));
+    }
+
+    e = subfile->line_vector->item + subfile->line_vector->nitems++;
+    e->line = line;
+    e->pc = pc;
+    //  e->pc = ADDR_BITS_REMOVE(pc);
 }
 
 /* Needed in order to sort line tables from IBM xcoff files.  Sigh!  */
 
 /* APPLE LOCAL make compare_line_numbers extern */
-int
+    int
 compare_line_numbers (const void *ln1p, const void *ln2p)
 {
-  struct linetable_entry *ln1 = (struct linetable_entry *) ln1p;
-  struct linetable_entry *ln2 = (struct linetable_entry *) ln2p;
+    struct linetable_entry *ln1 = (struct linetable_entry *) ln1p;
+    struct linetable_entry *ln2 = (struct linetable_entry *) ln2p;
 
-  /* Note: this code does not assume that CORE_ADDRs can fit in ints.
-     Please keep it that way.  */
-  if (ln1->pc < ln2->pc)
-    return -1;
+    /* Note: this code does not assume that CORE_ADDRs can fit in ints.
+       Please keep it that way.  */
+    if (ln1->pc < ln2->pc)
+        return -1;
 
-  if (ln1->pc > ln2->pc)
-    return 1;
+    if (ln1->pc > ln2->pc)
+        return 1;
 
-  /* If pc equal, sort by line.  I'm not sure whether this is optimum
-     behavior (see comment at struct linetable in symtab.h).  */
-  return ln1->line - ln2->line;
+    /* If pc equal, sort by line.  I'm not sure whether this is optimum
+       behavior (see comment at struct linetable in symtab.h).  */
+    return ln1->line - ln2->line;
 }
 
 
@@ -1227,7 +1227,7 @@ static struct subfile * dwarf_decode_lines (struct line_header *lh, char *comp_d
     unsigned char op_code, extended_op, adj_opcode;
     CORE_ADDR baseaddr;
     //struct objfile *objfile = cu->objfile;
-//    const int decode_for_pst_p = (pst != NULL);
+    //    const int decode_for_pst_p = (pst != NULL);
     const int decode_for_pst_p = 0;
 
     /* APPLE LOCAL: We'll need to skip linetable entries in functions that
@@ -1331,7 +1331,7 @@ static struct subfile * dwarf_decode_lines (struct line_header *lh, char *comp_d
                                 //    record_linetable_entry = 1;
                                 //}
                                 //else
-                                    record_linetable_entry = 1;
+                                record_linetable_entry = 1;
                             }
                             line_ptr += bytes_read;
                             address += baseaddr;
@@ -1364,7 +1364,7 @@ static struct subfile * dwarf_decode_lines (struct line_header *lh, char *comp_d
                     lh->file_names[file - 1].included_p = 1;
                     /* APPLE LOCAL: Skip linetable entries coalesced out */
                     if (!decode_for_pst_p && record_linetable_entry)
-//                        record_line (current_subfile, line, check_cu_functions (address, cu));
+                        //                        record_line (current_subfile, line, check_cu_functions (address, cu));
                         record_line (current_subfile, line, address);
                     basic_block = 0;
                     break;
@@ -1544,14 +1544,7 @@ struct data_of_interest doi = {0};
 struct section *dwarf_section_headers = NULL;
 struct abbrev_info *dwarf_abbrevs = NULL;
 
-//struct dwarf_sections dwarf_sections = {0};
-uint32_t numofdwarfsections = 0;
 void free_dwarf2_per_objfile(){
-    //uint32_t i = 0;
-    //while(i < numofdwarfsections){
-    //    free(dwarf2_per_objfile[i]);
-    //    i++;
-    //}
     if(dwarf2_per_objfile->info_buffer){
         free(dwarf2_per_objfile->info_buffer); 
     }
@@ -1592,37 +1585,36 @@ void free_dwarf2_per_objfile(){
         free(dwarf2_per_objfile->eh_frame_buffer); 
     }
 
-    free(dwarf_section_headers);
-    //todo
-    //free();
+    free(dwarf2_per_objfile);
 }
 int parse_dwarf_segment(FILE* fp, struct segment_command *command){
-    numofdwarfsections = command->nsects;
+    uint32_t numofdwarfsections = command->nsects;
+    
     dwarf2_per_objfile = malloc(sizeof(struct dwarf2_per_objfile));
     memset(dwarf2_per_objfile, '\0', sizeof(struct dwarf2_per_objfile));
+
     dwarf_section_headers = malloc(numofdwarfsections * sizeof(struct section));
     memset(dwarf_section_headers, '\0', numofdwarfsections * sizeof (struct section));
+
     int rc = 0;
     uint32_t i = 0;
     long current_pos = ftell (fp);
+    int seekreturn = 0;
     while(i < numofdwarfsections){
         if( (rc = fread(&(dwarf_section_headers[i]) ,sizeof(struct section), 1, fp)) != 0 ){
-            //printf("%s %s size: 0X%02X %d\n", dwarf_section_headers[i].segname, dwarf_section_headers[i].sectname, dwarf_section_headers[i].size, dwarf_section_headers[i].size); 
-            //dwarf2_per_objfile->info_buffer
             unsigned char *temp = malloc(dwarf_section_headers[i].size);
             if (temp == NULL){
                 printf("Malloc Error!\n");
-                return -1;
+                exit(-1);
             }
-            //memset(dwarf2_per_objfile->info_buffer, '\0', dwarf_section_headers[i].size);
             memset(temp, '\0', dwarf_section_headers[i].size);
 
             long temp_position = ftell(fp);
             fseek(fp, dwarf_section_headers[i].offset, SEEK_SET);
             int numofbytes = fread(temp, sizeof(char), dwarf_section_headers[i].size, fp);
             assert(numofbytes == dwarf_section_headers[i].size);
-            fseek(fp, temp_position, SEEK_SET);
-            //todo asset
+            seekreturn = fseek(fp, temp_position, SEEK_SET);
+            assert(seekreturn == 0);
 
             if(strcmp(dwarf_section_headers[i].sectname, "__debug_abbrev") == 0){ 
                 dwarf2_per_objfile->abbrev_buffer = temp;
@@ -1658,16 +1650,23 @@ int parse_dwarf_segment(FILE* fp, struct segment_command *command){
             }else if(strcmp(dwarf_section_headers[i].sectname, "__debug_str") == 0){
                 dwarf2_per_objfile->str_buffer = temp;
                 dwarf2_per_objfile->str_size = dwarf_section_headers[i].size;
+            }else if(strcmp(dwarf_section_headers[i].sectname, "__debug_frame") == 0){
+                //do nothing for now
+                free(temp);
             }else if(strcmp(dwarf_section_headers[i].sectname, "__apple_names") == 0){
-                //dwarf2_per_objfile->abbrev_buffer = temp;
+                //do nothing for now
+                free(temp);
             }else if(strcmp(dwarf_section_headers[i].sectname, "__apple_types") == 0){
-                //dwarf2_per_objfile->abbrev_buffer = temp;
+                //do nothing for now
+                free(temp);
             }else if((strcmp(dwarf_section_headers[i].sectname, "__apple_namespa") == 0) ||
                     (strcmp(dwarf_section_headers[i].sectname, "__apple_namespac__DWARF") == 0) 
                     ){
-                //dwarf2_per_objfile->abbrev_buffer = temp;
+                //do nothing for now
+                free(temp);
             }else if(strcmp(dwarf_section_headers[i].sectname, "__apple_objc") == 0){
-                //dwarf2_per_objfile->abbrev_buffer = temp;
+                //do nothing for now
+                free(temp);
             }else{
                 printf("╮(╯▽╰)╭, %s \n", dwarf_section_headers[i].sectname);
                 free(temp);
@@ -1676,7 +1675,8 @@ int parse_dwarf_segment(FILE* fp, struct segment_command *command){
         rc = 0;
         i++;
     }
-    int seekreturn = 0;
+    free(dwarf_section_headers);
+    seekreturn = 0;
     seekreturn = fseek (fp, current_pos, SEEK_SET); 
     assert(seekreturn == 0);
 }
@@ -1757,7 +1757,7 @@ int parse_macho(const char *filename){
     FILE *fp = fopen(filename, "rb");
     if (fp == NULL){
         printf("Read File Error.\n");
-        return 0;
+        exit(-1);
     }
 
     //    printf("Parsing Mach Header\n");
@@ -1768,29 +1768,14 @@ int parse_macho(const char *filename){
     if( (rc = fread(&mh ,sizeof(struct mach_header), 1, fp)) != 0 )
     {
         num_load_cmds = mh.ncmds;
-        //printf("sizeof struct mach_header: %u\n", sizeof(struct mach_header));
-        //printf("magic: %u\n", mh.magic);
-        //printf("cputype: %u\n", mh.cputype);
-        //printf("cpusubtype: %u\n", mh.cpusubtype);
-        //printf("filetype: %u\n", mh.filetype);
-        //printf("MH_EXECUTE: %u\n", MH_EXECUTE);
-        //printf("ncmds: %u\n", mh.ncmds);
-        //printf("sizeofcmds: %u\n", mh.sizeofcmds);
-        //printf("flags: %u\n", mh.flags);
-        //printf("record count %d\n", rc);
     } 
 
-    //printf("Parsing Load Commands\n");
     struct load_command lc = {0}; 
     int i = 0;
-    //num_load_cmds = 3;
     while (i < num_load_cmds){
-        //printf("Start Reading Load Command %d\n", i);
-        //todo try continue when find the data that we are interested with.
         if( (rc = fread(&lc ,sizeof(struct load_command), 1, fp)) != 0 )
         {
             assert(rc == 1);
-            //printf("record count: %d\n", rc);
             parse_load_command(fp, &lc);
         }else{
             printf("Read Load Command Error\n");
@@ -1799,8 +1784,7 @@ int parse_macho(const char *filename){
     }
 
     fclose(fp);
-    //print_all_dwarf2_per_objfile();
-    parse_dwarf2_per_objfile();
+
     return 0; 
 }
 
@@ -3206,8 +3190,8 @@ void print_line_vector(struct subfile *subfile){
     struct linetable_entry *e;
     int i = 0;
     for(i = 0; i < subfile->line_vector->nitems; i ++){
-      e = subfile->line_vector->item + i;
-      printf("address: 0x%08x line: %d\n", e->pc, e->line);
+        e = subfile->line_vector->item + i;
+        printf("address: 0x%08x line: %d\n", e->pc, e->line);
     }
 }
 
@@ -3217,18 +3201,19 @@ int get_lineno_for_address(struct subfile *subfile, CORE_ADDR address){
     struct linetable_entry *next_entry;
     int i = 0;
     for(i = 0; i < subfile->line_vector->nitems; i ++){
-      current_entry = subfile->line_vector->item + i;
-      next_entry = subfile->line_vector->item + i + 1;
-      if(address >= current_entry->pc && address < next_entry->pc ){
+        current_entry = subfile->line_vector->item + i;
+        next_entry = subfile->line_vector->item + i + 1;
+        if(address >= current_entry->pc && address < next_entry->pc ){
             return current_entry ->line;
-      }
+        }
     }
     return 0;
 }
 
 
 
-char *lookup_by_address(CORE_ADDR address){
+void lookup_by_address(long int integer_address){
+    CORE_ADDR address = (CORE_ADDR)integer_address;
     unsigned int num = dwarf2_per_objfile->n_aranges;
     struct arange **all_aranges = dwarf2_per_objfile->all_aranges; 
     struct arange *target_arange = NULL;
@@ -3250,11 +3235,12 @@ char *lookup_by_address(CORE_ADDR address){
     //struct arange *arange = target_arange;
     if(target_arange == NULL){
         printf("target_arange is NULL\n\n");
-        return NULL;
+        return;
+        //TODO flag?
     }
     //printf("Address Range Header: length = 0x%08x  version = 0x%04x  cu_offset = 0x%08x  addr_size = 0x%02x  seg_size = 0x%02x\n", arange->aranges_header.length, arange->aranges_header.version, arange->aranges_header.info_offset, arange->aranges_header.addr_size, arange->aranges_header.seg_size);
-   //for (j = 0; j < arange->num_of_ards; j++){
-        //printf("0x%08x + 0x%08x = 0x%08x\n", arange->address_range_descriptors[j].beginning_addr, arange->address_range_descriptors[j].length, arange->address_range_descriptors[j].beginning_addr + arange->address_range_descriptors[j].length);
+    //for (j = 0; j < arange->num_of_ards; j++){
+    //printf("0x%08x + 0x%08x = 0x%08x\n", arange->address_range_descriptors[j].beginning_addr, arange->address_range_descriptors[j].length, arange->address_range_descriptors[j].beginning_addr + arange->address_range_descriptors[j].length);
     //}
 
     //find the target compilation unit 
@@ -3268,8 +3254,8 @@ char *lookup_by_address(CORE_ADDR address){
     }
     struct dwarf2_cu *target_cu = target_dwarf2_per_cu_data->cu;
     printf("compilation unit dir: %s\n", target_cu->comp_dir);
-    
-    
+
+
     struct die_info *target_die = find_target_subprogram(target_cu->dies, target_ard);
     if(target_die == NULL){
         printf("Can not find target subprogram.\n");
@@ -3293,7 +3279,7 @@ char *lookup_by_address(CORE_ADDR address){
     if(flag == 1){
         printf("do not have stmt_list attribute\n");
     }else{
-       printf("offset: 0x%08x\n", offset);
+        printf("offset: 0x%08x\n", offset);
     }
     struct line_header *lh = dwarf_decode_line_header (offset, target_cu);
     struct subfile * current_subfile = dwarf_decode_lines (lh, NULL, target_cu);
@@ -3304,114 +3290,79 @@ char *lookup_by_address(CORE_ADDR address){
 }
 
 int parse_dwarf2_per_objfile(){
-    //printf("Parsing Abbrev\n");
     parse_dwarf_abbrev();
-    //printf("Parsing Info\n");
     parse_dwarf_info();
     parse_dwarf_aranges();
-
-    char *address_info = NULL;
-    //address_info = lookup_by_address(0x0000a87b);
-    printf("==============================\n");
-    address_info = lookup_by_address(0x00001d3d);
-    printf("==============================\n");
-    address_info = lookup_by_address(0x00001c75);
-    printf("==============================\n");
-    address_info = lookup_by_address(0x00002126);
-    printf("==============================\n");
-    //address_info = lookup_by_address(0x00001c75);
 }
 
 int parse_load_command(FILE *fp, struct load_command *lcp){
     long offset = 0L - sizeof(struct load_command);
-    //    printf("Command: %u\n", lcp->cmd);
     switch (lcp->cmd){
         case LC_UUID: 
-            //printf("load command type: %s\n", "LC_UUID");
             process_lc_uuid(fp, offset);
             break;
         case LC_SEGMENT: 
-            //printf("load command type: %s\n", "LC_SEGMENT");
             process_lc_segment(fp, offset);
             break;
         case LC_SEGMENT_64: 
-            //printf("load command type: %s\n", "LC_SEGMENT_64");
             process_lc_segment_64(fp, offset);
             break;
         case LC_SYMTAB:
-            //printf("load command type: %s\n", "LC_SYMTAB");
             process_lc_symtab(fp, offset);
             break;
         case LC_DYSYMTAB:
-            //printf("load command type: %s\n", "LC_DYSYMTAB");
             process_lc_dysymtab(fp, offset);
             break;
         case LC_THREAD:
-            //printf("load command type: %s\n", "LC_THREAD");
             process_lc_thread(fp, offset);
             break;
         case LC_UNIXTHREAD:
-            //printf("load command type: %s\n", "LC_UNIXTHREAD");
             process_lc_unixthread(fp, offset);
             break;
         case LC_LOAD_DYLIB:
-            //printf("load command type: %s\n", "LC_LOAD_DYLIB");
             process_lc_load_dylib(fp, offset);
             break;
         case LC_ID_DYLIB:
-            //printf("load command type: %s\n", "LC_ID_DYLIB");
             process_lc_id_dylib(fp, offset);
             break;
         case LC_PREBOUND_DYLIB:
-            //printf("load command type: %s\n", "LC_PREBOUND_DYLIB");
             process_lc_prebound_dylib(fp, offset);
             break;
         case LC_LOAD_DYLINKER:
-            //printf("load command type: %s\n", "LC_LOAD_DYLINKER");
             process_lc_load_dylinker(fp, offset);
             break;
         case LC_ID_DYLINKER:
-            //printf("load command type: %s\n", "LC_ID_DYLINKER");
             process_lc_id_dylinker(fp, offset);
             break;
         case LC_ROUTINES:
-            //printf("load command type: %s\n", "LC_ROUTINES");
             process_lc_routines(fp, offset);
             break;
         case LC_ROUTINES_64:
-            //printf("load command type: %s\n", "LC_ROUTINES_64");
             process_lc_routines_64(fp, offset);
             break;
         case LC_TWOLEVEL_HINTS:
-            //printf("load command type: %s\n", "LC_TWOLEVEL_HINTS");
             process_lc_twolevel_hints(fp, offset);
             break;
         case LC_SUB_FRAMEWORK:
-            //printf("load command type: %s\n", "LC_SUB_FRAMEWORK");
             process_lc_sub_framework(fp, offset);
             break;
         case LC_SUB_UMBRELLA:
-            //printf("load command type: %s\n", "LC_SUB_UMBRELLA");
             process_lc_sub_umbrella(fp, offset);
             break;
         case LC_SUB_LIBRARY:
-            //printf("load command type: %s\n", "LC_SUB_LIBRARY");
             process_lc_sub_library(fp, offset);
             break;
         case LC_SUB_CLIENT:
-            //printf("load command type: %s\n", "LC_SUB_CLIENT");
             process_lc_sub_client(fp, offset);
             break;
         case 41:
-            //printf("load command type: %s\n", "LC_DATA_IN_CODE");
             process_lc_data_in_code(fp, offset);
             break;
         case 38:
-            //printf("load command type: %s\n", "LC_FUNCTION_STARTS");
             process_lc_function_starts(fp, offset);
             break;
         default:
-            printf("load commmand type unknown\n");
+            printf("unknown load commmand type, ignoring...\n");
 
     }
 }
@@ -3483,7 +3434,6 @@ int process_lc_uuid(FILE *fp, long offset){
 }
 
 int process_lc_segment(FILE *fp, long offset){
-    //    printf("parsing LC_SEGMENT\n");
     struct segment_command command = {0};
     int rc = 0;
     int seekreturn = 0;
@@ -3491,22 +3441,14 @@ int process_lc_segment(FILE *fp, long offset){
     assert(seekreturn == 0);
     if( (rc = fread(&command ,sizeof(struct segment_command), 1, fp)) != 0 )
     {
-        //printf("record count: %d\n", rc);
-        //printf("cmd: %u\n", command.cmd);
-        //printf("cmdsize: %u\n", command.cmdsize);
-        //printf("segname: %s\n", command.segname);
-        //printf("vmaddr: 0x%x\n", command.vmaddr);
         if(strcmp(command.segname, "__TEXT") == 0){
             doi.text_vmaddr = command.vmaddr;
         }
         if(strcmp(command.segname, "__DWARF") == 0){
-            //printf("__DWARF File\n");
             parse_dwarf_segment(fp, &command);
-            //todo seek_back
             return 0;
         }
     }
-    //printf("\n");
     //in case there are sections, we need to seek the file point to the next load command
     seekreturn = fseek(fp, (command.cmdsize - sizeof(struct segment_command)), SEEK_CUR);
     assert(seekreturn == 0);

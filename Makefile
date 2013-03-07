@@ -1,24 +1,40 @@
 CC = gcc
-objects = mydwarfreader.o dwarf2read.o dwarf2expr.o \
-		  dwarf2-fame.o dwarf2loc.o
- 
-mydwarfreader : $(objects)
-	cc -o $(objects)
+CFLAGS = -c
+LDFLAGS = 
+OFLAG = -o
+LIBS = 
+OBJECTS = main.o macho.o converter.o
+DEBUG_OBJECTS =  main_debug.o macho_debug.o converter_debug.o
+EXECUTABLE = atos
+DEBUG = debug_atos
 
-mydwarfreader.o : mydwarfreader.c
-	$(CC) -c mydwarfreader.c
+all: release debug
 
-dwarf2read.o : dwarf2read.c dwarf2.h defs.h
-	$(CC) -c dwarf2read.c 
+main.o: main.c macho.h
+	$(CC) $(CFLAGS) main.c $(OFLAG) main.o
 
-dwarf2expr.o : dwarf2expr.c dwarf2expr.h
-	$(CC) -c dwarf2expr.c 
+converter.o: converter.c converter.h
+	$(CC) $(CFLAGS) converter.c $(OFLAG) converter.o
 
-dwarf2-frame.o : dwarf2-frame.c dwarf2-frame.h 
-	$(CC)  -c dwarf2-frame.c 
+macho.o: macho.c macho.h
+	$(CC) $(CFLAGS) macho.c $(OFLAG) macho.o
 
-dwarf2loc.o : dwarf2loc.c dwarf2loc.h 
-	$(CC)  -c dwarf2loc.c 
+main_debug.o: main.c macho.h
+	$(CC) $(CFLAGS) main.c $(OFLAG) main_debug.o
 
-clean : 
-	rm mydwarfreader $(objects)
+converter_debug.o: converter.c converter.h
+	$(CC) $(CFLAGS) converter.c $(OFLAG) converter_debug.o
+
+macho_debug.o: macho.c macho.h
+	$(CC) $(CFLAGS) macho.c $(OFLAG) macho_debug.o
+
+debug: CFLAGS += -g -DDEBUG
+debug: $(DEBUG_OBJECTS)
+	$(CC) $(OFLAG) $(DEBUG) $(DEBUG_OBJECTS)
+
+release: $(OBJECTS)
+	$(CC) $(OFLAG) $(EXECUTABLE) $(OBJECTS)
+
+clean:
+	rm -rf $(EXECUTABLE) $(DEBUG) *.o
+

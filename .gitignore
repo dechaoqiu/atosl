@@ -1,5 +1,9 @@
 # Object files
 *.o
+CrashTest*
+atos
+debug_atos
+core
 # tags
 
 # Libraries
