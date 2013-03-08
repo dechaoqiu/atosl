@@ -870,10 +870,6 @@ static long read_initial_length_of_comp_unit (char *buf, struct comp_unit_head *
     return length;
 }
 
-
-
-
-
 /* Add an entry to LH's include directory table.  */
     static void
 add_include_dir (struct line_header *lh, char *include_dir)
@@ -1587,98 +1583,100 @@ void free_dwarf2_per_objfile(){
 
     free(dwarf2_per_objfile);
 }
-int parse_dwarf_segment(FILE* fp, struct segment_command *command){
+int parse_dwarf_segment(char *macho_str, long offset,struct segment_command *command){
     uint32_t numofdwarfsections = command->nsects;
-    
+    //TODO  more dwarf2_per_objfile
     dwarf2_per_objfile = malloc(sizeof(struct dwarf2_per_objfile));
     memset(dwarf2_per_objfile, '\0', sizeof(struct dwarf2_per_objfile));
 
     dwarf_section_headers = malloc(numofdwarfsections * sizeof(struct section));
     memset(dwarf_section_headers, '\0', numofdwarfsections * sizeof (struct section));
 
-    int rc = 0;
     uint32_t i = 0;
-    long current_pos = ftell (fp);
-    int seekreturn = 0;
+    //long current_offset = offset;
+    memcpy(dwarf_section_headers, macho_str + offset, numofdwarfsections * sizeof(struct section));
+    //*offset += (numofdwarfsections * sizeof(struct section));
+
     while(i < numofdwarfsections){
-        if( (rc = fread(&(dwarf_section_headers[i]) ,sizeof(struct section), 1, fp)) != 0 ){
-            unsigned char *temp = malloc(dwarf_section_headers[i].size);
-            if (temp == NULL){
-                printf("Malloc Error!\n");
-                exit(-1);
-            }
-            memset(temp, '\0', dwarf_section_headers[i].size);
-
-            long temp_position = ftell(fp);
-            fseek(fp, dwarf_section_headers[i].offset, SEEK_SET);
-            int numofbytes = fread(temp, sizeof(char), dwarf_section_headers[i].size, fp);
-            assert(numofbytes == dwarf_section_headers[i].size);
-            seekreturn = fseek(fp, temp_position, SEEK_SET);
-            assert(seekreturn == 0);
-
-            if(strcmp(dwarf_section_headers[i].sectname, "__debug_abbrev") == 0){ 
-                dwarf2_per_objfile->abbrev_buffer = temp;
-                dwarf2_per_objfile->abbrev_size = dwarf_section_headers[i].size;
-            }else if(strcmp(dwarf_section_headers[i].sectname, "__debug_aranges") == 0){
-                dwarf2_per_objfile->aranges_buffer = temp;
-                dwarf2_per_objfile->aranges_size = dwarf_section_headers[i].size;
-            }else if(strcmp(dwarf_section_headers[i].sectname, "__debug_info") == 0){
-                dwarf2_per_objfile->info_buffer = temp;
-                dwarf2_per_objfile->info_size = dwarf_section_headers[i].size;
-            }else if(strcmp(dwarf_section_headers[i].sectname, "__debug_inlined") == 0){
-                dwarf2_per_objfile->inlined_buffer = temp;
-                dwarf2_per_objfile->inlined_size = dwarf_section_headers[i].size;
-            }else if(strcmp(dwarf_section_headers[i].sectname, "__debug_line") == 0){
-                dwarf2_per_objfile->line_buffer = temp;
-                dwarf2_per_objfile->line_size = dwarf_section_headers[i].size;
-            }else if(strcmp(dwarf_section_headers[i].sectname, "__debug_loc") == 0){
-                dwarf2_per_objfile->loc_buffer = temp;
-                dwarf2_per_objfile->loc_size = dwarf_section_headers[i].size;
-            }else if((strcmp(dwarf_section_headers[i].sectname, "__debug_pubnames") == 0) ||
-                    (strcmp(dwarf_section_headers[i].sectname, "__debug_pubnames__DWARF") == 0)
-                    ){
-                dwarf2_per_objfile->pubnames_buffer = temp;
-                dwarf2_per_objfile->pubnames_size = dwarf_section_headers[i].size;
-            }else if((strcmp(dwarf_section_headers[i].sectname, "__debug_pubtypes") == 0) ||
-                    (strcmp(dwarf_section_headers[i].sectname, "__debug_pubtypes__DWARF") == 0) 
-                    ){
-                dwarf2_per_objfile->pubtypes_buffer = temp;
-                dwarf2_per_objfile->pubtypes_size = dwarf_section_headers[i].size;
-            }else if(strcmp(dwarf_section_headers[i].sectname, "__debug_ranges") == 0){
-                dwarf2_per_objfile->ranges_buffer = temp;
-                dwarf2_per_objfile->ranges_size = dwarf_section_headers[i].size;
-            }else if(strcmp(dwarf_section_headers[i].sectname, "__debug_str") == 0){
-                dwarf2_per_objfile->str_buffer = temp;
-                dwarf2_per_objfile->str_size = dwarf_section_headers[i].size;
-            }else if(strcmp(dwarf_section_headers[i].sectname, "__debug_frame") == 0){
-                //do nothing for now
-                free(temp);
-            }else if(strcmp(dwarf_section_headers[i].sectname, "__apple_names") == 0){
-                //do nothing for now
-                free(temp);
-            }else if(strcmp(dwarf_section_headers[i].sectname, "__apple_types") == 0){
-                //do nothing for now
-                free(temp);
-            }else if((strcmp(dwarf_section_headers[i].sectname, "__apple_namespa") == 0) ||
-                    (strcmp(dwarf_section_headers[i].sectname, "__apple_namespac__DWARF") == 0) 
-                    ){
-                //do nothing for now
-                free(temp);
-            }else if(strcmp(dwarf_section_headers[i].sectname, "__apple_objc") == 0){
-                //do nothing for now
-                free(temp);
-            }else{
-                printf("╮(╯▽╰)╭, %s \n", dwarf_section_headers[i].sectname);
-                free(temp);
-            }
+        //if( (rc = fread(&(dwarf_section_headers[i]) ,sizeof(struct section), 1, fp)) != 0 ){
+        unsigned char *temp = malloc(dwarf_section_headers[i].size);
+        if (temp == NULL){
+            printf("Malloc Error!\n");
+            exit(-1);
         }
-        rc = 0;
+        memset(temp, '\0', dwarf_section_headers[i].size);
+        memcpy(temp, macho_str + dwarf_section_headers[i].offset, dwarf_section_headers[i].size);
+
+        //long temp_position = ftell(fp);
+        //fseek(fp, dwarf_section_headers[i].offset, SEEK_SET);
+        //int numofbytes = fread(temp, sizeof(char), dwarf_section_headers[i].size, fp);
+        //assert(numofbytes == dwarf_section_headers[i].size);
+        //seekreturn = fseek(fp, temp_position, SEEK_SET);
+        //assert(seekreturn == 0);
+
+        if(strcmp(dwarf_section_headers[i].sectname, "__debug_abbrev") == 0){ 
+            dwarf2_per_objfile->abbrev_buffer = temp;
+            dwarf2_per_objfile->abbrev_size = dwarf_section_headers[i].size;
+        }else if(strcmp(dwarf_section_headers[i].sectname, "__debug_aranges") == 0){
+            dwarf2_per_objfile->aranges_buffer = temp;
+            dwarf2_per_objfile->aranges_size = dwarf_section_headers[i].size;
+        }else if(strcmp(dwarf_section_headers[i].sectname, "__debug_info") == 0){
+            dwarf2_per_objfile->info_buffer = temp;
+            dwarf2_per_objfile->info_size = dwarf_section_headers[i].size;
+        }else if(strcmp(dwarf_section_headers[i].sectname, "__debug_inlined") == 0){
+            dwarf2_per_objfile->inlined_buffer = temp;
+            dwarf2_per_objfile->inlined_size = dwarf_section_headers[i].size;
+        }else if(strcmp(dwarf_section_headers[i].sectname, "__debug_line") == 0){
+            dwarf2_per_objfile->line_buffer = temp;
+            dwarf2_per_objfile->line_size = dwarf_section_headers[i].size;
+        }else if(strcmp(dwarf_section_headers[i].sectname, "__debug_loc") == 0){
+            dwarf2_per_objfile->loc_buffer = temp;
+            dwarf2_per_objfile->loc_size = dwarf_section_headers[i].size;
+        }else if((strcmp(dwarf_section_headers[i].sectname, "__debug_pubnames") == 0) ||
+                (strcmp(dwarf_section_headers[i].sectname, "__debug_pubnames__DWARF") == 0)
+                ){
+            dwarf2_per_objfile->pubnames_buffer = temp;
+            dwarf2_per_objfile->pubnames_size = dwarf_section_headers[i].size;
+        }else if((strcmp(dwarf_section_headers[i].sectname, "__debug_pubtypes") == 0) ||
+                (strcmp(dwarf_section_headers[i].sectname, "__debug_pubtypes__DWARF") == 0) 
+                ){
+            dwarf2_per_objfile->pubtypes_buffer = temp;
+            dwarf2_per_objfile->pubtypes_size = dwarf_section_headers[i].size;
+        }else if(strcmp(dwarf_section_headers[i].sectname, "__debug_ranges") == 0){
+            dwarf2_per_objfile->ranges_buffer = temp;
+            dwarf2_per_objfile->ranges_size = dwarf_section_headers[i].size;
+        }else if(strcmp(dwarf_section_headers[i].sectname, "__debug_str") == 0){
+            dwarf2_per_objfile->str_buffer = temp;
+            dwarf2_per_objfile->str_size = dwarf_section_headers[i].size;
+        }else if(strcmp(dwarf_section_headers[i].sectname, "__debug_frame") == 0){
+            //do nothing for now
+            free(temp);
+        }else if(strcmp(dwarf_section_headers[i].sectname, "__apple_names") == 0){
+            //do nothing for now
+            free(temp);
+        }else if(strcmp(dwarf_section_headers[i].sectname, "__apple_types") == 0){
+            //do nothing for now
+            free(temp);
+        }else if((strcmp(dwarf_section_headers[i].sectname, "__apple_namespa") == 0) ||
+                (strcmp(dwarf_section_headers[i].sectname, "__apple_namespac__DWARF") == 0) 
+                ){
+            //do nothing for now
+            free(temp);
+        }else if(strcmp(dwarf_section_headers[i].sectname, "__apple_objc") == 0){
+            //do nothing for now
+            free(temp);
+        }else{
+            printf("╮(╯▽╰)╭, %s \n", dwarf_section_headers[i].sectname);
+            free(temp);
+        }
+        //}
+        //rc = 0;
         i++;
     }
     free(dwarf_section_headers);
-    seekreturn = 0;
-    seekreturn = fseek (fp, current_pos, SEEK_SET); 
-    assert(seekreturn == 0);
+    //seekreturn = 0;
+    //seekreturn = fseek (fp, current_pos, SEEK_SET); 
+    //assert(seekreturn == 0);
 }
 
 void print_all_dwarf2_per_objfile(){
@@ -1752,7 +1750,27 @@ void print_all_dwarf2_per_objfile(){
     printf("\n");
     printf("\n");
 }
-uint32_t magic_number = 0;
+
+
+void parse_normal(FILE *fp, struct target_file *tf){
+    tf->numofarchs = 1;
+    tf->thin_machos = malloc(1 *sizeof(struct thin_macho*));
+    memset(tf->thin_machos, '\0', 1 * sizeof(struct thin_macho*));
+
+    fseek(fp, 0L, SEEK_END);
+    long int size = ftell(fp);
+
+    fseek(fp, 0L, SEEK_SET);
+
+    int numofbytes = 0;
+    tf->thin_machos[0] = malloc(sizeof(struct thin_macho));
+    tf->thin_machos[0]->data = malloc(size);
+    memset(tf->thin_machos[0]->data, '\0', size);
+
+    numofbytes = fread(tf->thin_machos[0]->data, sizeof(char), size, fp);
+    assert(numofbytes == size);
+    parse_macho(tf->thin_machos[0]);
+}
 
 int parse_file(const char *filename){
     FILE *fp = fopen(filename, "rb");
@@ -1765,8 +1783,13 @@ int parse_file(const char *filename){
     //Values for integer types in all Mach-O data structures are written 
     //using the host CPU’s byte ordering scheme, except for fat_header and
     //fat_arch, which are written in big-endian byte order.
+
+    struct target_file *tf = malloc(sizeof(struct target_file));
+    memset(tf, '\0', sizeof(struct target_file));
+
     int rc = 0;
     int seekreturn = 0;
+    uint32_t magic_number = 0;
     if( (rc = fread(&magic_number, sizeof(uint32_t), 1, fp)) != 0 )
     {
         seekreturn = fseek (fp, 0 - sizeof(uint32_t), SEEK_CUR); 
@@ -1775,8 +1798,8 @@ int parse_file(const char *filename){
         switch(magic_number){
             case MH_MAGIC:
                 //current machine endian is same with host machine
-                printf("MH_MAGIC: %x\n", MH_MAGIC);
-                parse_macho(fp);
+                //printf("MH_MAGIC: %x\n", MH_MAGIC);
+                parse_normal(fp, tf);
                 break;
             case MH_MAGIC_64:
                 //current machine endian is same with host machine
@@ -1792,20 +1815,22 @@ int parse_file(const char *filename){
                 break;
             case FAT_MAGIC:
                 //current machine is big endian
-                printf("FAT_MAGIC: %x\n", FAT_MAGIC);
-                exit(-1);
+                //printf("FAT_MAGIC: %x\n", FAT_MAGIC);
+                parse_universal(fp, FAT_MAGIC, tf);
                 break;
             case FAT_CIGAM:
                 //current machie is small endian
-                printf("FAT_CIGAM: %x\n", FAT_CIGAM);
-                parse_universal(fp, FAT_CIGAM);
+                //printf("FAT_CIGAM: %x\n", FAT_CIGAM);
+                parse_universal(fp, FAT_CIGAM, tf);
                 break;
             default:
                 printf("unknown file type.");
                 exit(-1);
         }
     } 
-     
+    //printf("close file\n");
+    fclose(fp); 
+    return 0;
 }
 void int32_endian_convert(int32_t *num)
 {
@@ -1847,7 +1872,7 @@ void integer_t_endian_convert(integer_t *num)
     }
 }
 
-int parse_fat_arch(FILE *fp, struct fat_arch *fa, char **thin_macho){
+int parse_fat_arch(FILE *fp, struct fat_arch *fa, struct thin_macho**thin_macho, uint32_t magic_number){
     if (magic_number == FAT_CIGAM){
         integer_t_endian_convert(&fa->cputype);
         integer_t_endian_convert(&fa->cpusubtype);
@@ -1856,12 +1881,12 @@ int parse_fat_arch(FILE *fp, struct fat_arch *fa, char **thin_macho){
         uint32_endian_convert(&fa->align);
     }
 
-    printf("offset: 0x%x\n", fa->offset);
-    printf("size: 0x%x\n", fa->size);
-    printf("align: 0x%x\n", fa->align);
+    //printf("offset: 0x%x\n", fa->offset);
+    //printf("size: 0x%x\n", fa->size);
+    //printf("align: 0x%x\n", fa->align);
     
-    *thin_macho = malloc(fa->size);
-    memset(*thin_macho, '\0', fa->size);
+    (*thin_macho)->data = malloc(fa->size);
+    memset((*thin_macho)->data, '\0', fa->size);
 
     //record current pos
     long cur_position = ftell(fp);
@@ -1870,7 +1895,7 @@ int parse_fat_arch(FILE *fp, struct fat_arch *fa, char **thin_macho){
     assert(seekreturn == 0);
 
     int numofbytes = 0;
-    numofbytes = fread(*thin_macho, sizeof(char), fa->size, fp);
+    numofbytes = fread((*thin_macho)->data, sizeof(char), fa->size, fp);
     assert(numofbytes == fa->size);
     seekreturn = fseek(fp, cur_position, SEEK_SET);
     assert(seekreturn == 0);
@@ -1878,7 +1903,7 @@ int parse_fat_arch(FILE *fp, struct fat_arch *fa, char **thin_macho){
     return 0; 
 }
 
-int parse_universal(FILE *fp, uint32_t magic_number){
+int parse_universal(FILE *fp, uint32_t magic_number, struct target_file *tf){
     int rc = 0;
     struct fat_header fh = {0};
 
@@ -1889,54 +1914,58 @@ int parse_universal(FILE *fp, uint32_t magic_number){
             uint32_endian_convert(&fh.nfat_arch);
         }
         nfat_arch = fh.nfat_arch;
-        printf("nfat_arch: %u\n", nfat_arch);
+        //printf("nfat_arch: %u\n", nfat_arch);
     } 
     //free maloc failed? 
-    char **thin_machos = malloc(sizeof(char *) * nfat_arch);
-    memset(thin_machos, '\0', sizeof(char *) * nfat_arch);
-
+    tf->numofarchs = nfat_arch;
+    tf->thin_machos = malloc(nfat_arch *sizeof(struct thin_macho*));
+    memset(tf->thin_machos, '\0', nfat_arch * sizeof(struct thin_macho*));
+    
     uint32_t i = 0;
     struct fat_arch fa = {0};
     while (i < nfat_arch){
-        char *thin_macho = thin_machos[i];
+        tf->thin_machos[i] = malloc(sizeof(struct thin_macho));
+        memset(tf->thin_machos[i], '\0', sizeof(struct thin_macho));
         if( (rc = fread(&fa ,sizeof(struct fat_arch), 1, fp)) != 0 )
         {
             assert(rc == 1);
-            parse_fat_arch(fp, &fa, &thin_macho);
+            parse_fat_arch(fp, &fa, &tf->thin_machos[i], magic_number);
         }else{
             printf("read fat arch error\n");
         }
         i++;
     }
+    //TODO
+    parse_macho(tf->thin_machos[1]);
 }
 
-int parse_macho(FILE *fp){
+void read_struct_from_str(void *dest, char **macho_str, size_t len){
+    memcpy(dest, *macho_str, len);
+    *macho_str += len;
+}
 
-    //get_file_type(fp);
-    //    printf("Parsing Mach Header\n");
+int parse_macho(struct thin_macho*tm){
+    char *macho_str = tm->data;
     int rc = 0;    
     struct mach_header mh = {0};
     int num_load_cmds = 0;
-    if( (rc = fread(&mh ,sizeof(struct mach_header), 1, fp)) != 0 )
-    {
-        num_load_cmds = mh.ncmds;
-    } 
+    long offset = 0;
+    
+    memcpy(&mh, macho_str + offset, sizeof(struct mach_header)); 
+    offset += sizeof(struct mach_header);
+    num_load_cmds = mh.ncmds;
 
     struct load_command lc = {0}; 
     int i = 0;
     while (i < num_load_cmds){
-        if( (rc = fread(&lc ,sizeof(struct load_command), 1, fp)) != 0 )
-        {
-            assert(rc == 1);
-            parse_load_command(fp, &lc);
-        }else{
-            printf("Read Load Command Error\n");
-        }
+        memcpy(&lc, macho_str + offset, sizeof(struct load_command));
+        //because we will try to read the actual load_command depend on 
+        //load_command type, so we do not need to add the offset.
+        //offset += sizeof(struct load_command);
+        parse_load_command(macho_str, &offset, &lc);
         i++;
     }
-
-    fclose(fp);
-
+//    printf("finished\n");
     return 0; 
 }
 
@@ -3405,7 +3434,7 @@ void lookup_by_address(long int integer_address){
         }
     }
     struct dwarf2_cu *target_cu = target_dwarf2_per_cu_data->cu;
-    printf("compilation unit dir: %s\n", target_cu->comp_dir);
+    //printf("compilation unit dir: %s\n", target_cu->comp_dir);
 
 
     struct die_info *target_die = find_target_subprogram(target_cu->dies, target_ard);
@@ -3421,23 +3450,23 @@ void lookup_by_address(long int integer_address){
         target_program_name = target_program_name +1;
     }
     char *target_subprogram_name = get_name_attribute(target_die);
-    printf("target_program_full_name: %s\n", target_program_full_name);
-    printf("target_program_name: %s\n", target_program_name);
-    printf("target_subprogram_name: %s\n", target_subprogram_name);
+    //printf("target_program_full_name: %s\n", target_program_full_name);
+    //printf("target_program_name: %s\n", target_program_name);
+    //printf("target_subprogram_name: %s\n", target_subprogram_name);
 
-    printf("Lookup address infomation\n");
+    //printf("Lookup address infomation\n");
     char flag;
     unsigned int offset = get_stmt_list_attribute(target_cu->dies, &flag);
     if(flag == 1){
         printf("do not have stmt_list attribute\n");
     }else{
-        printf("offset: 0x%08x\n", offset);
+        //printf("offset: 0x%08x\n", offset);
     }
     struct line_header *lh = dwarf_decode_line_header (offset, target_cu);
     struct subfile * current_subfile = dwarf_decode_lines (lh, NULL, target_cu);
     //print_line_vector(current_subfile);
     int lineno = get_lineno_for_address(current_subfile, address);
-    printf("lineno: %d\n",lineno);
+    //printf("lineno: %d\n",lineno);
     printf("%s (in %s) (%s:%d)\n", target_subprogram_name, project_name, target_program_name, lineno);
 }
 
@@ -3447,71 +3476,71 @@ int parse_dwarf2_per_objfile(){
     parse_dwarf_aranges();
 }
 
-int parse_load_command(FILE *fp, struct load_command *lcp){
-    long offset = 0L - sizeof(struct load_command);
-    switch (lcp->cmd){
+int parse_load_command(char *macho_str, long *offset, struct load_command *lc){
+    //long offset = sizeof(struct load_command);
+    switch (lc->cmd){
         case LC_UUID: 
-            process_lc_uuid(fp, offset);
+            process_lc_uuid(macho_str, offset);
             break;
         case LC_SEGMENT: 
-            process_lc_segment(fp, offset);
+            process_lc_segment(macho_str, offset);
             break;
         case LC_SEGMENT_64: 
-            process_lc_segment_64(fp, offset);
+            process_lc_segment_64(macho_str, offset);
             break;
         case LC_SYMTAB:
-            process_lc_symtab(fp, offset);
+            process_lc_symtab(macho_str, offset);
             break;
         case LC_DYSYMTAB:
-            process_lc_dysymtab(fp, offset);
+            process_lc_dysymtab(macho_str, offset);
             break;
         case LC_THREAD:
-            process_lc_thread(fp, offset);
+            process_lc_thread(macho_str, offset);
             break;
         case LC_UNIXTHREAD:
-            process_lc_unixthread(fp, offset);
+            process_lc_unixthread(macho_str, offset);
             break;
         case LC_LOAD_DYLIB:
-            process_lc_load_dylib(fp, offset);
+            process_lc_load_dylib(macho_str, offset);
             break;
         case LC_ID_DYLIB:
-            process_lc_id_dylib(fp, offset);
+            process_lc_id_dylib(macho_str, offset);
             break;
         case LC_PREBOUND_DYLIB:
-            process_lc_prebound_dylib(fp, offset);
+            process_lc_prebound_dylib(macho_str, offset);
             break;
         case LC_LOAD_DYLINKER:
-            process_lc_load_dylinker(fp, offset);
+            process_lc_load_dylinker(macho_str, offset);
             break;
         case LC_ID_DYLINKER:
-            process_lc_id_dylinker(fp, offset);
+            process_lc_id_dylinker(macho_str, offset);
             break;
         case LC_ROUTINES:
-            process_lc_routines(fp, offset);
+            process_lc_routines(macho_str, offset);
             break;
         case LC_ROUTINES_64:
-            process_lc_routines_64(fp, offset);
+            process_lc_routines_64(macho_str, offset);
             break;
         case LC_TWOLEVEL_HINTS:
-            process_lc_twolevel_hints(fp, offset);
+            process_lc_twolevel_hints(macho_str, offset);
             break;
         case LC_SUB_FRAMEWORK:
-            process_lc_sub_framework(fp, offset);
+            process_lc_sub_framework(macho_str, offset);
             break;
         case LC_SUB_UMBRELLA:
-            process_lc_sub_umbrella(fp, offset);
+            process_lc_sub_umbrella(macho_str, offset);
             break;
         case LC_SUB_LIBRARY:
-            process_lc_sub_library(fp, offset);
+            process_lc_sub_library(macho_str, offset);
             break;
         case LC_SUB_CLIENT:
-            process_lc_sub_client(fp, offset);
+            process_lc_sub_client(macho_str, offset);
             break;
         case 41:
-            process_lc_data_in_code(fp, offset);
+            process_lc_data_in_code(macho_str, offset);
             break;
         case 38:
-            process_lc_function_starts(fp, offset);
+            process_lc_function_starts(macho_str, offset);
             break;
         default:
             printf("unknown load commmand type, ignoring...\n");
@@ -3519,267 +3548,166 @@ int parse_load_command(FILE *fp, struct load_command *lcp){
     }
 }
 
-int process_lc_data_in_code(FILE *fp, long offset){
-    //    printf("parsing LC_DATA_IN_CODE\n");
+int process_lc_data_in_code(char *macho_str, long *offset){
     struct lc_data_in_code command = {0};
-    int rc = 0;
-    int seekreturn = 0;
-    seekreturn = fseek (fp, offset, SEEK_CUR); 
-    assert(seekreturn == 0);
-    if( (rc = fread(&command ,sizeof(struct lc_data_in_code), 1, fp)) != 0 )
-    {
-        //printf("record count: %d\n", rc);
-        //printf("cmd: %u\n", command.cmd);
-        //printf("cmdsize: %u\n", command.cmdsize);
-    }
-    //printf("\n");
-    seekreturn = fseek(fp, (command.cmdsize - sizeof(struct lc_data_in_code)), SEEK_CUR);
-    assert(seekreturn == 0);
+    memcpy(&command, macho_str + *offset, sizeof(struct lc_data_in_code));
+    *offset += command.cmdsize;
     return 0;
 }
 
-int process_lc_function_starts(FILE *fp, long offset){
-    //    printf("parsing LC_FUNCTION_STARTS\n");
+int process_lc_function_starts(char *macho_str, long *offset){
     struct lc_function_starts command = {0};
-    int rc = 0;
-    int seekreturn = 0;
-    seekreturn = fseek (fp, offset, SEEK_CUR); 
-    assert(seekreturn == 0);
-    if( (rc = fread(&command ,sizeof(struct lc_function_starts), 1, fp)) != 0 )
-    {
-        //printf("record count: %d\n", rc);
-        //printf("cmd: %u\n", command.cmd);
-        //printf("cmdsize: %u\n", command.cmdsize);
-    }
-    //    printf("\n");
-    seekreturn = fseek(fp, (command.cmdsize - sizeof(struct lc_function_starts)), SEEK_CUR);
-    assert(seekreturn == 0);
+    memcpy(&command, macho_str + *offset, sizeof(struct lc_function_starts));
+    *offset += command.cmdsize;
     return 0;
-
 }
 
-int process_lc_uuid(FILE *fp, long offset){
+int process_lc_uuid(char *macho_str, long *offset){
     //    printf("parsing LC_UUID\n");
     struct uuid_command command = {0};
-    int rc = 0;
-    int seekreturn = 0;
-    seekreturn = fseek (fp, offset, SEEK_CUR); 
-    assert(seekreturn == 0);
-    if( (rc = fread(&command ,sizeof(struct uuid_command), 1, fp)) != 0 )
-    {
-        //printf("record count: %d\n", rc);
-        //printf("cmd: %u\n", command.cmd);
-        //printf("cmdsize: %u\n", command.cmdsize);
-        int i = 0;
-        int numofbytes = sizeof(command.uuid)/sizeof(*command.uuid);
-        //printf("numofbytes: %d\n", numofbytes);
-        printf("uuid: ");
-        for (; i < numofbytes; i++){
-            printf("%02X", command.uuid[i]);
-        }
-        printf("\n");
+    memcpy(&command, macho_str + *offset, sizeof(struct uuid_command));
+    *offset += sizeof(struct uuid_command);
+    int numofbytes = sizeof(command.uuid)/sizeof(*command.uuid);
+    //printf("numofbytes: %d\n", numofbytes);
+    printf("uuid: ");
+    int i = 0;
+    for (i = 0; i < numofbytes; i++){
+        printf("%02X", command.uuid[i]);
     }
-    //printf("\n");
-    seekreturn = fseek(fp, (command.cmdsize - sizeof(struct uuid_command)), SEEK_CUR);
-    assert(seekreturn == 0);
+    printf("\n");
+    //in case there are sections, we need to seek the file point to the next load command
+    *offset += command.cmdsize - sizeof(struct uuid_command); 
     return 0; 
 }
 
-int process_lc_segment(FILE *fp, long offset){
+int process_lc_segment(char *macho_str, long *offset){
     struct segment_command command = {0};
-    int rc = 0;
-    int seekreturn = 0;
-    seekreturn = fseek (fp, offset, SEEK_CUR); 
-    assert(seekreturn == 0);
-    if( (rc = fread(&command ,sizeof(struct segment_command), 1, fp)) != 0 )
-    {
-        if(strcmp(command.segname, "__TEXT") == 0){
-            doi.text_vmaddr = command.vmaddr;
-        }
-        if(strcmp(command.segname, "__DWARF") == 0){
-            parse_dwarf_segment(fp, &command);
-            return 0;
-        }
+
+    memcpy(&command, macho_str + *offset, sizeof(struct segment_command));
+    *offset += sizeof(struct segment_command);
+    if(strcmp(command.segname, "__TEXT") == 0){
+        doi.text_vmaddr = command.vmaddr;
+    }
+    if(strcmp(command.segname, "__DWARF") == 0){
+        parse_dwarf_segment(macho_str, *offset, &command);
+        return 0;
     }
     //in case there are sections, we need to seek the file point to the next load command
-    seekreturn = fseek(fp, (command.cmdsize - sizeof(struct segment_command)), SEEK_CUR);
-    assert(seekreturn == 0);
+    *offset += command.cmdsize - sizeof(struct segment_command); 
     return 0; 
 }
 
-int process_lc_sub_client(FILE *fp, long offset){
+int process_lc_sub_client(char *macho_str, long *offset){
+    struct sub_client_command command = {0};
+    memcpy(&command, macho_str + *offset, sizeof(struct sub_client_command));
+    *offset += command.cmdsize;
     return 0;
 }
 
-int process_lc_sub_library(FILE *fp, long offset){
-    return 0;
-
-}
-
-int process_lc_sub_umbrella(FILE *fp, long offset){
-    return 0;
-
-}
-int process_lc_sub_framework(FILE *fp, long offset){
-    return 0;
-
-}
-int process_lc_twolevel_hints(FILE *fp, long offset){
-    return 0;
-
-}
-int process_lc_routines_64(FILE *fp, long offset){
-    return 0;
-
-}
-int process_lc_routines(FILE *fp, long offset){
+int process_lc_sub_library(char *macho_str, long *offset){
+    struct sub_library_command command = {0};
+    memcpy(&command, macho_str + *offset, sizeof(struct sub_library_command));
+    *offset += command.cmdsize;
     return 0;
 
 }
 
-int process_lc_id_dylinker(FILE *fp, long offset){
-    //    printf("parsing LC_ID_DYLINKER\n");
+int process_lc_sub_umbrella(char *macho_str, long *offset){
+    struct sub_umbrella_command command = {0};
+    memcpy(&command, macho_str + *offset, sizeof(struct sub_umbrella_command));
+    *offset += command.cmdsize;
+    return 0;
+}
+
+int process_lc_sub_framework(char *macho_str, long *offset){
+    struct sub_framework_command command = {0};
+    memcpy(&command, macho_str + *offset, sizeof(struct sub_framework_command));
+    *offset += command.cmdsize;
+    return 0;
+}
+int process_lc_twolevel_hints(char *macho_str, long *offset){
+    struct twolevel_hints_command command = {0};
+    memcpy(&command, macho_str + *offset, sizeof(struct twolevel_hints_command));
+    *offset += command.cmdsize;
+    return 0;
+}
+
+int process_lc_routines_64(char *macho_str, long *offset){
+    struct routines_command_64 command = {0};
+    memcpy(&command, macho_str + *offset, sizeof(struct routines_command_64));
+    *offset += command.cmdsize;
+    return 0;
+}
+
+int process_lc_routines(char *macho_str, long *offset){
+    struct routines_command command = {0};
+    memcpy(&command, macho_str + *offset, sizeof(struct routines_command));
+    *offset += command.cmdsize;
+    return 0;
+}
+
+int process_lc_id_dylinker(char *macho_str, long *offset){
     struct dylinker_command command = {0};
-    int rc = 0;
-    int seekreturn = 0;
-    seekreturn = fseek (fp, offset, SEEK_CUR); 
-    assert(seekreturn == 0);
-    if( (rc = fread(&command ,sizeof(struct dylinker_command), 1, fp)) != 0 )
-    {
-        //printf("record count: %d\n", rc);
-        //printf("cmd: %u\n", command.cmd);
-        //printf("cmdsize: %u\n", command.cmdsize);
-    }
-    //printf("\n");
-    seekreturn = fseek(fp, (command.cmdsize - sizeof(struct dylinker_command)), SEEK_CUR);
-    assert(seekreturn == 0);
+    memcpy(&command, macho_str + *offset, sizeof(struct dylinker_command));
+    *offset += command.cmdsize;
     return 0;
-
 }
-int process_lc_load_dylinker(FILE *fp, long offset){
-    //    printf("parsing LC_LOAD_DYLINKER\n");
+int process_lc_load_dylinker(char *macho_str, long *offset){
     struct dylinker_command command = {0};
-    int rc = 0;
-    int seekreturn = 0;
-    seekreturn = fseek (fp, offset, SEEK_CUR); 
-    assert(seekreturn == 0);
-    if( (rc = fread(&command ,sizeof(struct dylinker_command), 1, fp)) != 0 )
-    {
-        //printf("record count: %d\n", rc);
-        //printf("cmd: %u\n", command.cmd);
-        //printf("cmdsize: %u\n", command.cmdsize);
-        //printf("dylinker_command: %u\n", sizeof(struct dylinker_command));
-    }
-    //printf("\n");
-    seekreturn = fseek(fp, (command.cmdsize - sizeof(struct dylinker_command)), SEEK_CUR);
-    assert(seekreturn == 0);
-
+    memcpy(&command, macho_str + *offset, sizeof(struct dylinker_command));
+    *offset += command.cmdsize;
     return 0;
-
 }
-int process_lc_prebound_dylib(FILE *fp, long offset){
+int process_lc_prebound_dylib(char *macho_str, long *offset){
+    struct prebound_dylib_command command = {0};
+    memcpy(&command, macho_str + *offset, sizeof(struct prebound_dylib_command));
+    *offset += command.cmdsize;
     return 0;
-
 }
-int process_lc_id_dylib(FILE *fp, long offset){
-    return 0;
-
-}
-int process_lc_load_dylib(FILE *fp, long offset){
-    //    printf("parsing LC_LOAD_DYLIB\n");
+int process_lc_id_dylib(char *macho_str, long *offset){
     struct dylib_command command = {0};
-    int rc = 0;
-    int seekreturn = 0;
-    seekreturn = fseek (fp, offset, SEEK_CUR); 
-    assert(seekreturn == 0);
-    if( (rc = fread(&command ,sizeof(struct dylib_command), 1, fp)) != 0 )
-    {
-        //printf("record count: %d\n", rc);
-        //printf("cmd: %u\n", command.cmd);
-        //printf("cmdsize: %u\n", command.cmdsize);
-    }
-    //printf("\n");
-    seekreturn = fseek(fp, (command.cmdsize - sizeof(struct dylib_command)), SEEK_CUR);
-    assert(seekreturn == 0);
+    memcpy(&command, macho_str + *offset, sizeof(struct dylib_command));
+    *offset += command.cmdsize;
+    return 0;
+}
+int process_lc_load_dylib(char *macho_str, long *offset){
+    struct dylib_command command = {0};
+    memcpy(&command, macho_str + *offset, sizeof(struct dylib_command));
+    *offset += command.cmdsize;
     return 0;
 }
 
-int process_lc_thread(FILE *fp, long offset){
-    //    printf("parsing LC_THREAD\n");
+int process_lc_thread(char *macho_str, long *offset){
     struct thread_command command = {0};
-    int rc = 0;
-    int seekreturn = 0;
-    seekreturn = fseek (fp, offset, SEEK_CUR); 
-    assert(seekreturn == 0);
-    if( (rc = fread(&command ,sizeof(struct thread_command), 1, fp)) != 0 )
-    {
-        //printf("record count: %d\n", rc);
-        //printf("cmd: %u\n", command.cmd);
-        //printf("cmdsize: %u\n", command.cmdsize);
-    }
-    //printf("\n");
-    seekreturn = fseek(fp, (command.cmdsize - sizeof(struct thread_command)), SEEK_CUR);
-    assert(seekreturn == 0);
+    memcpy(&command, macho_str + *offset, sizeof(struct thread_command));
+    *offset += command.cmdsize;
     return 0;
-
 }
 
-int process_lc_unixthread(FILE *fp, long offset){
-    //    printf("parsing LC_UNIXTHREAD\n");
+int process_lc_unixthread(char *macho_str, long *offset){
     struct thread_command command = {0};
-    int rc = 0;
-    int seekreturn = 0;
-    seekreturn = fseek (fp, offset, SEEK_CUR); 
-    assert(seekreturn == 0);
-    if( (rc = fread(&command ,sizeof(struct thread_command), 1, fp)) != 0 )
-    {
-        //printf("record count: %d\n", rc);
-        //printf("cmd: %u\n", command.cmd);
-        //printf("cmdsize: %u\n", command.cmdsize);
-    }
-    //printf("\n");
-    seekreturn = fseek(fp, (command.cmdsize - sizeof(struct thread_command)), SEEK_CUR);
-    assert(seekreturn == 0);
+    memcpy(&command, macho_str + *offset, sizeof(struct thread_command));
+    *offset += command.cmdsize;
     return 0;
 }
-int process_lc_dysymtab(FILE *fp, long offset){
-    //    printf("parsing LC_DYSYMTAB\n");
+
+int process_lc_dysymtab(char *macho_str, long *offset){
     struct dysymtab_command command = {0};
-    int rc = 0;
-    int seekreturn = 0;
-    seekreturn = fseek (fp, offset, SEEK_CUR); 
-    assert(seekreturn == 0);
-    if( (rc = fread(&command ,sizeof(struct dysymtab_command), 1, fp)) != 0 )
-    {
-        //printf("record count: %d\n", rc);
-        //printf("cmd: %u\n", command.cmd);
-        //printf("cmdsize: %u\n", command.cmdsize);
-    }
-    //printf("\n");
-    seekreturn = fseek(fp, (command.cmdsize - sizeof(struct dysymtab_command)), SEEK_CUR);
-    assert(seekreturn == 0);
+    memcpy(&command, macho_str + *offset, sizeof(struct dysymtab_command));
+    *offset += command.cmdsize;
     return 0;
 }
-int process_lc_symtab(FILE *fp, long offset){
-    //    printf("parsing LC_SYMTAB\n");
+
+int process_lc_symtab(char *macho_str, long *offset){
     struct symtab_command command = {0};
-    int rc = 0;
-    int seekreturn = 0;
-    seekreturn = fseek (fp, offset, SEEK_CUR); 
-    assert(seekreturn == 0);
-    if( (rc = fread(&command ,sizeof(struct symtab_command), 1, fp)) != 0 )
-    {
-        //printf("record count: %d\n", rc);
-        //printf("cmd: %u\n", command.cmd);
-        //printf("cmdsize: %u\n", command.cmdsize);
-        //printf("nsyms: %u\n", command.nsyms);
-    }
-    //printf("\n");
-    seekreturn = fseek(fp, (command.cmdsize - sizeof(struct symtab_command)), SEEK_CUR);
-    assert(seekreturn == 0);
+    memcpy(&command, macho_str + *offset, sizeof(struct symtab_command));
+    *offset += command.cmdsize;
     return 0;
 }
-int process_lc_segment_64(FILE *fp, long offse){
+int process_lc_segment_64(char *macho_str, long *offset){
+    struct segment_command_64 command = {0};
+    memcpy(&command, macho_str + *offset, sizeof(struct segment_command_64));
+    *offset += command.cmdsize;
     return 0;
 }
 

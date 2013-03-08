@@ -38,7 +38,7 @@ void numeric_to_symbols(const char **addresses, int numofaddresses){
         }
 
         lookup_by_address(integer_address);
-        printf("==============================\n");
+        //printf("==============================\n");
     }
 }
 
@@ -56,7 +56,7 @@ int main(int argc, char *argv[]){
     //char *full_filename = "./CrashTest3";
     //char *full_filename = "./CrashTest2";
     char *full_filename = argv[2];
-    printf("full_filename: %s\n", full_filename);
+    //printf("full_filename: %s\n", full_filename);
     char *filename = strrchr(full_filename, '/');
     if(filename == NULL){
         filename = full_filename;
@@ -64,14 +64,14 @@ int main(int argc, char *argv[]){
         filename = filename + 1;
     }
     project_name = filename;
-    printf("Project Name: %s\n", project_name);
+    //printf("Project Name: %s\n", project_name);
     
     //get address
     int numofaddresses = argc - 3;
     char **numeric_addresses = argv + 3;
     int rc = 0;
     rc = parse_file(full_filename);
-    if (rc = -1){
+    if (rc == -1){
         printf("parse file error.");
         exit(-1);
     }
