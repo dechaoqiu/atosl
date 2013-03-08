@@ -1752,18 +1752,170 @@ void print_all_dwarf2_per_objfile(){
     printf("\n");
     printf("\n");
 }
+uint32_t magic_number = 0;
 
-int parse_macho(const char *filename){
+int parse_file(const char *filename){
     FILE *fp = fopen(filename, "rb");
     if (fp == NULL){
         printf("Read File Error.\n");
         exit(-1);
     }
-
-    //    printf("Parsing Mach Header\n");
-
-    struct mach_header mh = {0};
+    
+    //tell file type by their magic number
+    //Values for integer types in all Mach-O data structures are written 
+    //using the host CPU’s byte ordering scheme, except for fat_header and
+    //fat_arch, which are written in big-endian byte order.
     int rc = 0;
+    int seekreturn = 0;
+    if( (rc = fread(&magic_number, sizeof(uint32_t), 1, fp)) != 0 )
+    {
+        seekreturn = fseek (fp, 0 - sizeof(uint32_t), SEEK_CUR); 
+        assert(seekreturn == 0);
+        printf("magic_number: %x\n", magic_number);
+        switch(magic_number){
+            case MH_MAGIC:
+                //current machine endian is same with host machine
+                printf("MH_MAGIC: %x\n", MH_MAGIC);
+                parse_macho(fp);
+                break;
+            case MH_MAGIC_64:
+                //current machine endian is same with host machine
+                printf("MH_MAGIC_64: %x\n", MH_MAGIC_64);
+                break;
+            case MH_CIGAM:
+                //current machine endian is not same with host machine
+                printf("MH_CIGAM: %x\n", MH_CIGAM);
+                break;
+            case MH_CIGAM_64:
+                //current machine endian is not same with host machine
+                printf("MH_CIGAM_64: %x\n", MH_CIGAM_64);
+                break;
+            case FAT_MAGIC:
+                //current machine is big endian
+                printf("FAT_MAGIC: %x\n", FAT_MAGIC);
+                exit(-1);
+                break;
+            case FAT_CIGAM:
+                //current machie is small endian
+                printf("FAT_CIGAM: %x\n", FAT_CIGAM);
+                parse_universal(fp, FAT_CIGAM);
+                break;
+            default:
+                printf("unknown file type.");
+                exit(-1);
+        }
+    } 
+     
+}
+void int32_endian_convert(int32_t *num)
+{
+    int32_t original_num = *num;
+    *num = 0;
+    int i;
+    for (i = 0; i < 4; i++)
+    {
+        *num <<= 8;
+        *num |= (original_num & 0xFF);
+        original_num >>= 8;
+    }
+}
+
+
+void uint32_endian_convert(uint32_t *num)
+{
+    uint32_t original_num = *num;
+    *num = 0;
+    int i;
+    for (i = 0; i < 4; i++)
+    {
+        *num <<= 8;
+        *num |= (original_num & 0xFF);
+        original_num >>= 8;
+    }
+}
+
+void integer_t_endian_convert(integer_t *num)
+{
+    integer_t original_num = *num;
+    *num = 0;
+    int i;
+    for (i = 0; i < 4; i++)
+    {
+        *num <<= 8;
+        *num |= (original_num & 0xFF);
+        original_num >>= 8;
+    }
+}
+
+int parse_fat_arch(FILE *fp, struct fat_arch *fa, char **thin_macho){
+    if (magic_number == FAT_CIGAM){
+        integer_t_endian_convert(&fa->cputype);
+        integer_t_endian_convert(&fa->cpusubtype);
+        uint32_endian_convert(&fa->offset);
+        uint32_endian_convert(&fa->size);
+        uint32_endian_convert(&fa->align);
+    }
+
+    printf("offset: 0x%x\n", fa->offset);
+    printf("size: 0x%x\n", fa->size);
+    printf("align: 0x%x\n", fa->align);
+    
+    *thin_macho = malloc(fa->size);
+    memset(*thin_macho, '\0', fa->size);
+
+    //record current pos
+    long cur_position = ftell(fp);
+    int seekreturn = 0;
+    seekreturn = fseek(fp, fa->offset, SEEK_SET);
+    assert(seekreturn == 0);
+
+    int numofbytes = 0;
+    numofbytes = fread(*thin_macho, sizeof(char), fa->size, fp);
+    assert(numofbytes == fa->size);
+    seekreturn = fseek(fp, cur_position, SEEK_SET);
+    assert(seekreturn == 0);
+
+    return 0; 
+}
+
+int parse_universal(FILE *fp, uint32_t magic_number){
+    int rc = 0;
+    struct fat_header fh = {0};
+
+    uint32_t nfat_arch = 0;
+    if( (rc = fread(&fh ,sizeof(struct fat_header), 1, fp)) != 0 )
+    {
+        if (magic_number == FAT_CIGAM){
+            uint32_endian_convert(&fh.nfat_arch);
+        }
+        nfat_arch = fh.nfat_arch;
+        printf("nfat_arch: %u\n", nfat_arch);
+    } 
+    //free maloc failed? 
+    char **thin_machos = malloc(sizeof(char *) * nfat_arch);
+    memset(thin_machos, '\0', sizeof(char *) * nfat_arch);
+
+    uint32_t i = 0;
+    struct fat_arch fa = {0};
+    while (i < nfat_arch){
+        char *thin_macho = thin_machos[i];
+        if( (rc = fread(&fa ,sizeof(struct fat_arch), 1, fp)) != 0 )
+        {
+            assert(rc == 1);
+            parse_fat_arch(fp, &fa, &thin_macho);
+        }else{
+            printf("read fat arch error\n");
+        }
+        i++;
+    }
+}
+
+int parse_macho(FILE *fp){
+
+    //get_file_type(fp);
+    //    printf("Parsing Mach Header\n");
+    int rc = 0;    
+    struct mach_header mh = {0};
     int num_load_cmds = 0;
     if( (rc = fread(&mh ,sizeof(struct mach_header), 1, fp)) != 0 )
     {

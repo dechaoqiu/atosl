@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <string.h>
 #include "loader.h"
+#include "fat.h"
 #include "language.h"
 #include "dwarf2.h"
 #include "converter.h"
@@ -11,7 +12,11 @@
 struct data_of_interest{
     uint32_t text_vmaddr;
 };
-int parse_macho(const char *filename);
+
+int parse_fat_arch(FILE *fp, struct fat_arch *fa, char **thin_macho);
+int parse_universal(FILE *fp, uint32_t magic_number);
+int parse_file(const char *filename);
+int parse_macho(FILE *fp);
 int process_lc_uuid(FILE *fp, long offset);
 int process_lc_segment(FILE *fp, long offset);
 int process_lc_sub_client(FILE *fp, long offset);

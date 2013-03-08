@@ -69,7 +69,12 @@ int main(int argc, char *argv[]){
     //get address
     int numofaddresses = argc - 3;
     char **numeric_addresses = argv + 3;
-    parse_macho(full_filename);
+    int rc = 0;
+    rc = parse_file(full_filename);
+    if (rc = -1){
+        printf("parse file error.");
+        exit(-1);
+    }
 
     parse_dwarf2_per_objfile();
     numeric_to_symbols((const char **)numeric_addresses, numofaddresses);
