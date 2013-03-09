@@ -130,6 +130,28 @@ struct arange{
     unsigned int num_of_ards;
 };
 
+struct function_range
+{
+    const char *name;
+    CORE_ADDR lowpc, highpc;
+    int seen_line;
+    struct function_range *next;
+};
+
+
+
+/*  This data structure holds the information of an abbrev. */
+struct abbrev_info
+{
+    unsigned int number;    /*  number identifying abbrev */
+    enum dwarf_tag tag;     /*  dwarf tag */
+    unsigned short has_children;        /*  boolean */
+    unsigned short num_attrs;   /*  number of attributes */
+    struct attr_abbrev *attrs;  /*  an array of attribute descriptions */
+    struct abbrev_info *next;   /*  next in chain */
+};
+
+
 struct dwarf2_per_objfile
 {
     /* Sizes of debugging sections.  */
@@ -175,27 +197,7 @@ struct dwarf2_per_objfile
     /* A chain of compilation units that are currently read in, so that
        they can be freed later.  */
     struct dwarf2_per_cu_data *read_in_chain;
-};
-
-struct function_range
-{
-    const char *name;
-    CORE_ADDR lowpc, highpc;
-    int seen_line;
-    struct function_range *next;
-};
-
-
-
-/*  This data structure holds the information of an abbrev. */
-struct abbrev_info
-{
-    unsigned int number;    /*  number identifying abbrev */
-    enum dwarf_tag tag;     /*  dwarf tag */
-    unsigned short has_children;        /*  boolean */
-    unsigned short num_attrs;   /*  number of attributes */
-    struct attr_abbrev *attrs;  /*  an array of attribute descriptions */
-    struct abbrev_info *next;   /*  next in chain */
+    struct abbrev_info **dwarf2_abbrevs;
 };
 
 struct attr_abbrev

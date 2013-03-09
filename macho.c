@@ -21,8 +21,6 @@
 extern char *project_name;
 struct data_of_interest doi = {0};
 
-struct abbrev_info **dwarf2_abbrevs;
-
 static struct die_info * read_die_and_children (char *info_ptr, struct dwarf2_cu *cu, char **new_info_ptr, struct die_info *parent);
 static struct die_info * read_die_and_siblings (char *info_ptr, struct dwarf2_cu *cu, char **new_info_ptr, struct die_info *parent);
 
@@ -2232,7 +2230,7 @@ static struct dwarf2_cu * load_full_comp_unit (struct dwarf2_per_objfile *dwarf2
 
     /* Read the abbrevs for this compilation unit  */
     //dwarf2_read_abbrevs (cu);
-    cu->dwarf2_abbrevs = dwarf2_abbrevs;
+    cu->dwarf2_abbrevs = dwarf2_per_objfile->dwarf2_abbrevs;
 
 
     //  back_to = make_cleanup (dwarf2_free_abbrev_table, cu);
@@ -2332,8 +2330,10 @@ static void create_all_comp_units(struct dwarf2_per_objfile *dwarf2_per_objfile)
 //free abbrev hash
 void parse_dwarf_abbrev(struct dwarf2_per_objfile *dwarf2_per_objfile){
     //allocate space form the abbrev hash
-    dwarf2_abbrevs = malloc(sizeof(struct abbrev_info *) * ABBREV_HASH_SIZE);
+    struct abbrev_info **dwarf2_abbrevs= malloc(sizeof(struct abbrev_info *) * ABBREV_HASH_SIZE);
     memset(dwarf2_abbrevs, 0, sizeof(struct abbrev_info *) * ABBREV_HASH_SIZE);
+
+    dwarf2_per_objfile->dwarf2_abbrevs = dwarf2_abbrevs;
     unsigned char * info_ptr = dwarf2_per_objfile->abbrev_buffer;
     int size = dwarf2_per_objfile->abbrev_size;
     unsigned char* endof_abbrev_pos = info_ptr + size;
