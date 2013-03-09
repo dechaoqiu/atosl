@@ -18,438 +18,13 @@
 
 #include "macho.h"
 
-
-
-/* We hold several abbreviation tables in memory at the same time. */
-#ifndef ABBREV_HASH_SIZE
-#define ABBREV_HASH_SIZE 121
-#endif
-#define INITIAL_LINE_VECTOR_LENGTH  1000
-typedef unsigned int CORE_ADDR;
 extern char *project_name;
-
-struct lc_function_starts
-{
-    uint32_t cmd;
-    uint32_t cmdsize;
-    uint32_t offset;
-    uint32_t size;
-};
-
-struct lc_data_in_code
-{
-    uint32_t cmd;
-    uint32_t cmdsize;
-    uint32_t offset;
-    uint32_t size;
-};
-
-
-
-/* Persistent data held for a compilation unit, even when not
-   processing it.  We put a pointer to this structure in the
-   read_symtab_private field of the psymtab.  If we encounter
-   inter-compilation-unit references, we also maintain a sorted
-   list of all compilation units.  */
-
-struct dwarf2_per_cu_data
-{
-    /* The start offset and length of this compilation unit.  2**31-1
-       bytes should suffice to store the length of any compilation unit
-       - if it doesn't, GDB will fall over anyway.  */
-    unsigned long offset;
-    unsigned long length : 31;
-
-    /* Flag indicating this compilation unit will be read in before
-       any of the current compilation units are processed.  */
-    //unsigned long queued : 1;
-
-    /* Set iff currently read in.  */
-    struct dwarf2_cu *cu;
-
-    /* If full symbols for this CU have been read in, then this field
-       holds a map of DIE offsets to types.  It isn't always possible
-       to reconstruct this information later, so we have to preserve
-       it.  */
-    //htab_t type_hash;
-
-    ///* The partial symbol table associated with this compilation unit.  */
-    //struct partial_symtab *psymtab;
-};
-
-
-/* .debug_pubnames header
-   Because of alignment constraints, this structure has padding and cannot
-   be mapped directly onto the beginning of the .debug_info section.  */
-struct aranges_header
-{
-    unsigned int length;	/* byte len of the .debug_aranges
-                               contribution */
-    unsigned short version;	/* version number -- 2 for dwarf
-                               version 2 */
-    unsigned int info_offset;	/* offset into .debug_info section */
-    unsigned char addr_size;	/* byte size of an address */
-    unsigned char seg_size;	/* byte size of segment descriptor */
-} ;
-
-
-struct arange{
-    struct aranges_header aranges_header;
-    struct address_range_descriptor *address_range_descriptors;
-    unsigned int num_of_ards;
-};
-
-struct dwarf2_per_objfile
-{
-    /* Sizes of debugging sections.  */
-    unsigned int info_size;
-    unsigned int abbrev_size;
-    unsigned int line_size;
-    unsigned int pubnames_size;
-    unsigned int aranges_size;
-    unsigned int loc_size;
-    unsigned int macinfo_size;
-    unsigned int str_size;
-    unsigned int ranges_size;
-    unsigned int inlined_size;
-    unsigned int pubtypes_size;
-    unsigned int frame_size;
-    unsigned int eh_frame_size;
-
-    /* Loaded data from the sections.  */
-    char *info_buffer;
-    char *abbrev_buffer;
-    char *line_buffer;
-    char *pubnames_buffer;
-    char *aranges_buffer;
-    char *loc_buffer;
-    char *macinfo_buffer;
-    char *str_buffer;
-    char *ranges_buffer;
-    char *inlined_buffer;
-    char *pubtypes_buffer;
-    char *frame_buffer;
-    char *eh_frame_buffer;
-    //char *
-
-    /* A list of all the compilation units.  This is used to locate
-       the target compilation unit of a particular reference.  */
-    struct dwarf2_per_cu_data **all_comp_units;
-    struct arange **all_aranges;
-
-    /* The number of compilation units in ALL_COMP_UNITS.  */
-    int n_comp_units;
-    int n_aranges;
-
-    /* A chain of compilation units that are currently read in, so that
-       they can be freed later.  */
-    struct dwarf2_per_cu_data *read_in_chain;
-};
-
-
-static struct dwarf2_per_objfile *dwarf2_per_objfile;
-
-struct function_range
-{
-    const char *name;
-    CORE_ADDR lowpc, highpc;
-    int seen_line;
-    struct function_range *next;
-};
-
-
-
-/*  This data structure holds the information of an abbrev. */
-struct abbrev_info
-{
-    unsigned int number;    /*  number identifying abbrev */
-    enum dwarf_tag tag;     /*  dwarf tag */
-    unsigned short has_children;        /*  boolean */
-    unsigned short num_attrs;   /*  number of attributes */
-    struct attr_abbrev *attrs;  /*  an array of attribute descriptions */
-    struct abbrev_info *next;   /*  next in chain */
-};
-
-struct attr_abbrev
-{
-    enum dwarf_attribute name; 
-    enum dwarf_form form; 
-};
-
-
-/* Blocks are a bunch of untyped bytes. */
-struct dwarf_block
-{
-    unsigned int size;
-    char *data;
-};
-
-
+struct data_of_interest doi = {0};
 
 struct abbrev_info **dwarf2_abbrevs;
 
-/* Attributes have a name and a value */
-struct attribute
-{
-    enum dwarf_attribute name;
-    enum dwarf_form form;
-    union
-    {
-        char *str;
-        struct dwarf_block *blk;
-        unsigned long unsnd;
-        long int snd;
-        CORE_ADDR addr;
-    }
-    u;
-};
-
-/* This data structure holds a complete die structure. */
-struct die_info
-{
-    enum dwarf_tag tag;		/* Tag indicating type of die */
-    unsigned int abbrev;	/* Abbrev number */
-    unsigned int offset;	/* Offset in .debug_info section */
-    /* APPLE LOCAL - dwarf repository  */
-    //unsigned int repository_id; /* Id number in debug repository */
-    unsigned int num_attrs;	/* Number of attributes */
-    struct attribute *attrs;	/* An array of attributes */
-    //struct die_info *next_ref;	/* Next die in ref hash table */
-
-    /* The dies in a compilation unit form an n-ary tree.  PARENT
-       points to this die's parent; CHILD points to the first child of
-       this node; and all the children of a given node are chained
-       together via their SIBLING fields, terminated by a die whose
-       tag is zero.  */
-    struct die_info *child;	/* Its first child, if any.  */
-    struct die_info *sibling;	/* Its next sibling, if any.  */
-    struct die_info *parent;	/* Its parent, if any.  */
-
-    //struct type *type;		/* Cached type information */
-};
-
-
-
-/* The data in a compilation unit header, after target2host
-   translation, looks like this.  */
-struct comp_unit_head
-{
-    unsigned long length;
-    short version;
-    unsigned int abbrev_offset;
-    unsigned char addr_size;
-    unsigned char signed_addr_p;
-
-    /* Size of file offsets; either 4 or 8.  */
-    unsigned int offset_size;
-
-    /* Size of the length field; either 4 or 12.  */
-    unsigned int initial_length_size;
-
-    /* Offset to the first byte of this compilation unit header in the
-       .debug_info section, for resolving relative reference dies.  */
-    unsigned int offset;
-
-    /* Pointer to this compilation unit header in the .debug_info
-       section.  */
-    char *cu_head_ptr;
-
-    /* Pointer to the first die of this compilation unit.  This will be
-       the first byte following the compilation unit header.  */
-    char *first_die_ptr;
-
-    /* Pointer to the next compilation unit header in the program.  */
-    struct comp_unit_head *next;
-
-    /* Base address of this compilation unit.  */
-    CORE_ADDR base_address;
-
-    /* Non-zero if base_address has been set.  */
-    int base_known;
-};
-
-
-/* Internal state when decoding a particular compilation unit.  */
-struct dwarf2_cu
-{
-    /* The objfile containing this compilation unit.  */
-    //struct objfile *objfile;
-
-    /* The header of the compilation unit.
-
-       FIXME drow/2003-11-10: Some of the things from the comp_unit_head
-       should logically be moved to the dwarf2_cu structure.  */
-    struct comp_unit_head header;
-    //TODO
-    //struct function_range *first_fn, *last_fn, *cached_fn;
-
-    /* The language we are debugging.  */
-    enum language language;
-    //const struct language_defn *language_defn;
-
-    const char *producer;
-
-    /* APPLE LOCAL: Retain the compilation directory pathname for header
-       file relative pathnames (via gcc parameters like "-I../../../include").  */
-    char *comp_dir;
-
-    /* The generic symbol table building routines have separate lists for
-       file scope symbols and all all other scopes (local scopes).  So
-       we need to select the right one to pass to add_symbol_to_list().
-       We do it by keeping a pointer to the correct list in list_in_scope.
-
-FIXME: The original dwarf code just treated the file scope as the
-first local scope, and all other local scopes as nested local
-scopes, and worked fine.  Check to see if we really need to
-distinguish these in buildsym.c.  */
-    //struct pending **list_in_scope;
-
-    /* Maintain an array of referenced fundamental types for the current
-       compilation unit being read.  For DWARF version 1, we have to construct
-       the fundamental types on the fly, since no information about the
-       fundamental types is supplied.  Each such fundamental type is created by
-       calling a language dependent routine to create the type, and then a
-       pointer to that type is then placed in the array at the index specified
-       by it's FT_<TYPENAME> value.  The array has a fixed size set by the
-       FT_NUM_MEMBERS compile time constant, which is the number of predefined
-       fundamental types gdb knows how to construct.  */
-    //struct type *ftypes[FT_NUM_MEMBERS];	/* Fundamental types */
-
-    /* DWARF abbreviation table associated with this compilation unit.  */
-    struct abbrev_info **dwarf2_abbrevs;
-
-    /* Storage for the abbrev table.  */
-    //TODO
-    //struct obstack abbrev_obstack;
-
-    /* Hash table holding all the loaded partial DIEs.  */
-    //htab_t partial_dies;
-
-    /* Storage for things with the same lifetime as this read-in compilation
-       unit, including partial DIEs.  */
-    //struct obstack comp_unit_obstack;
-
-    /* When multiple dwarf2_cu structures are living in memory, this field
-       chains them all together, so that they can be released efficiently.
-       We will probably also want a generation counter so that most-recently-used
-       compilation units are cached...  */
-    //struct dwarf2_per_cu_data *read_in_chain;
-
-    /* Backchain to our per_cu entry if the tree has been built.  */
-    struct dwarf2_per_cu_data *per_cu;
-
-    /* How many compilation units ago was this CU last referenced?  */
-    //int last_used;
-
-    /* A hash table of die offsets for following references.  */
-    //struct die_info *die_ref_table[REF_HASH_SIZE];
-
-    /* Full DIEs if read in.  */
-    struct die_info *dies;
-
-    /* A set of pointers to dwarf2_per_cu_data objects for compilation
-       units referenced by this one.  Only set during full symbol processing;
-       partial symbol tables do not have dependencies.  */
-    //htab_t dependencies;
-
-    /* Mark used when releasing cached dies.  */
-    //unsigned int mark : 1;
-
-    /* This flag will be set if this compilation unit might include
-       inter-compilation-unit references.  */
-    //unsigned int has_form_ref_addr : 1;
-
-    /* This flag will be set if this compilation unit includes any
-       DW_TAG_namespace DIEs.  If we know that there are explicit
-       DIEs for namespaces, we don't need to try to infer them
-       from mangled names.  */
-    //unsigned int has_namespace_info : 1;
-
-    /* APPLE LOCAL begin dwarf repository  */
-    //sqlite3 *repository;
-
-    //char *repository_name;
-    /* APPLE LOCAL end dwarf repository  */
-
-    /* APPLE LOCAL debug map */
-    //struct oso_to_final_addr_map *addr_map;
-};
-
-//struct dwarf2_cu *cu;
-//
-
-
-
-
-/* .debug_line statement program prologue
-   Because of alignment constraints, this structure has padding and cannot
-   be mapped directly onto the beginning of the .debug_info section.  */
-struct statement_prologue
-{
-    unsigned int total_length;	/* byte length of the statement
-                                   information */
-    unsigned short version;	/* version number -- 2 for DWARF
-                               version 2 */
-    unsigned int prologue_length;	/* # bytes between prologue &
-                                       stmt program */
-    unsigned char minimum_instruction_length;	/* byte size of
-                                                   smallest instr */
-    unsigned char default_is_stmt;	/* initial value of is_stmt
-                                       register */
-    char line_base;
-    unsigned char line_range;
-    unsigned char opcode_base;	/* number assigned to first special
-                                   opcode */
-    unsigned char *standard_opcode_lengths;
-};
-
-/* The line number information for a compilation unit (found in the
-   .debug_line section) begins with a "statement program header",
-   which contains the following information.  */
-struct line_header
-{
-    unsigned int total_length;
-    unsigned short version;
-    unsigned int header_length;
-    unsigned char minimum_instruction_length;
-    unsigned char default_is_stmt;
-    int line_base;
-    unsigned char line_range;
-    unsigned char opcode_base;
-
-    /* standard_opcode_lengths[i] is the number of operands for the
-       standard opcode whose value is i.  This means that
-       standard_opcode_lengths[0] is unused, and the last meaningful
-       element is standard_opcode_lengths[opcode_base - 1].  */
-    unsigned char *standard_opcode_lengths;
-
-    /* The include_directories table.  NOTE!  These strings are not
-       allocated with xmalloc; instead, they are pointers into
-       debug_line_buffer.  If you try to free them, `free' will get
-       indigestion.  */
-    unsigned int num_include_dirs, include_dirs_size;
-    char **include_dirs;
-
-    /* The file_names table.  NOTE!  These strings are not allocated
-       with xmalloc; instead, they are pointers into debug_line_buffer.
-       Don't try to free them directly.  */
-    unsigned int num_file_names, file_names_size;
-    struct file_entry
-    {
-        char *name;
-        unsigned int dir_index;
-        unsigned int mod_time;
-        unsigned int length;
-        int included_p; /* Non-zero if referenced by the Line Number Program.  */
-    } *file_names;
-
-    /* The start and end of the statement program following this
-       header.  These point into dwarf2_per_objfile->line_buffer.  */
-    char *statement_program_start, *statement_program_end;
-};
-
-
-
+static struct die_info * read_die_and_children (char *info_ptr, struct dwarf2_cu *cu, char **new_info_ptr, struct die_info *parent);
+static struct die_info * read_die_and_siblings (char *info_ptr, struct dwarf2_cu *cu, char **new_info_ptr, struct die_info *parent);
 
 /* Free the line_header structure *LH, and any arrays and strings it
    refers to.  */
@@ -484,6 +59,18 @@ signed int read_signed_32(unsigned char *info_ptr){
     signed int ret = 0;
     ret = info_ptr[3];
     ret = (ret << 8) + info_ptr[2];
+    ret = (ret << 8) + info_ptr[1];
+    ret = (ret << 8) + info_ptr[0];
+    return ret;
+}
+
+int64_t read_signed_64(unsigned char *info_ptr){
+    int64_t ret = 0;
+    ret = info_ptr[7];
+    ret = (ret << 8) + info_ptr[6];
+    ret = (ret << 8) + info_ptr[5];
+    ret = (ret << 8) + info_ptr[4];
+    ret = (ret << 8) + info_ptr[3];
     ret = (ret << 8) + info_ptr[1];
     ret = (ret << 8) + info_ptr[0];
     return ret;
@@ -753,11 +340,11 @@ static CORE_ADDR read_address_of_cu (char *buf, struct dwarf2_cu *cu, int *bytes
         case 4:
             retval = read_signed_32(buf);
             break;
-            //case 8:
-            //    retval = bfd_get_signed_64 (abfd, (bfd_byte *) buf);
-            //    break;
+        case 8:
+            retval = read_signed_64(buf);
+            break;
         default:
-            printf("read address: bad switch, signed\n");
+            printf("347read address: bad switch, signed\n");
     }
     //}
     //else
@@ -843,7 +430,7 @@ static long read_initial_length_of_comp_unit (char *buf, struct comp_unit_head *
     }
     else if (length == 0)
     {
-        /* Handle the (non-standard) 64-bit DWARF2 format used by IRIX.  */
+        /* Handle the (non-standard) 63-bit DWARF2 format used by IRIX.  */
         length = read_8_bytes(buf + 4);
         *bytes_read = 8;
     }
@@ -935,6 +522,7 @@ the returned object point into debug_line_buffer, and must not be
 freed.  */
 static struct line_header * dwarf_decode_line_header (unsigned int offset, struct dwarf2_cu *cu)
 {
+    struct dwarf2_per_objfile *dwarf2_per_objfile = cu->dwarf2_per_objfile;
     //  struct cleanup *back_to;
     struct line_header *lh;
     char *line_ptr;
@@ -1076,60 +664,6 @@ static struct line_header * dwarf_decode_line_header (unsigned int offset, struc
 //    fn->seen_line = 1;
 //    return fn->lowpc;
 //}
-
-/* Each item represents a line-->pc (or the reverse) mapping.  This is
-   somewhat more wasteful of space than one might wish, but since only
-   the files which are actually debugged are read in to core, we don't
-   waste much space.  */
-
-struct linetable_entry
-{
-    int line;
-    CORE_ADDR pc;
-};
-
-/* The order of entries in the linetable is significant.  They should
-   be sorted by increasing values of the pc field.  If there is more than
-   one entry for a given pc, then I'm not sure what should happen (and
-   I not sure whether we currently handle it the best way).
-
-Example: a C for statement generally looks like this
-
-10   0x100   - for the init/test part of a for stmt.
-20   0x200
-30   0x300
-10   0x400   - for the increment part of a for stmt.
-
-If an entry has a line number of zero, it marks the start of a PC
-range for which no line number information is available.  It is
-acceptable, though wasteful of table space, for such a range to be
-zero length.  */
-
-struct linetable
-{
-    int nitems;
-    int lines_are_chars;
-
-    /* Actually NITEMS elements.  If you don't like this use of the
-       `struct hack', you can shove it up your ANSI (seriously, if the
-       committee tells us how to do it, we can probably go along).  */
-    struct linetable_entry item[1];
-};
-
-/* The list of sub-source-files within the current individual
-   compilation.  Each file gets its own symtab with its own linetable
-   and associated info, but they all share one blockvector.  */
-
-struct subfile
-{
-    //struct subfile *next;
-    //char *name;
-    //char *dirname;
-    struct linetable *line_vector;
-    int line_vector_length;
-    enum language language;
-    //char *debugformat;
-};
 
 
 
@@ -1527,20 +1061,7 @@ static void set_cu_language (unsigned int lang, struct dwarf2_cu *cu)
     //cu->language_defn = language_def (cu->language);
 }
 
-
-
-
-
-
-
-
-
-struct data_of_interest doi = {0};
-
-struct section *dwarf_section_headers = NULL;
-struct abbrev_info *dwarf_abbrevs = NULL;
-
-void free_dwarf2_per_objfile(){
+void free_dwarf2_per_objfile(struct dwarf2_per_objfile *dwarf2_per_objfile){
     if(dwarf2_per_objfile->info_buffer){
         free(dwarf2_per_objfile->info_buffer); 
     }
@@ -1583,22 +1104,19 @@ void free_dwarf2_per_objfile(){
 
     free(dwarf2_per_objfile);
 }
-int parse_dwarf_segment(char *macho_str, long offset,struct segment_command *command){
+
+struct dwarf2_per_objfile* parse_dwarf_segment(char *macho_str, long offset,struct segment_command *command){
     uint32_t numofdwarfsections = command->nsects;
-    //TODO  more dwarf2_per_objfile
-    dwarf2_per_objfile = malloc(sizeof(struct dwarf2_per_objfile));
+
+    struct dwarf2_per_objfile *dwarf2_per_objfile = malloc(sizeof(struct dwarf2_per_objfile));
     memset(dwarf2_per_objfile, '\0', sizeof(struct dwarf2_per_objfile));
 
-    dwarf_section_headers = malloc(numofdwarfsections * sizeof(struct section));
+    struct section * dwarf_section_headers = malloc(numofdwarfsections * sizeof(struct section));
     memset(dwarf_section_headers, '\0', numofdwarfsections * sizeof (struct section));
+    memcpy(dwarf_section_headers, macho_str + offset, numofdwarfsections * sizeof(struct section));
 
     uint32_t i = 0;
-    //long current_offset = offset;
-    memcpy(dwarf_section_headers, macho_str + offset, numofdwarfsections * sizeof(struct section));
-    //*offset += (numofdwarfsections * sizeof(struct section));
-
     while(i < numofdwarfsections){
-        //if( (rc = fread(&(dwarf_section_headers[i]) ,sizeof(struct section), 1, fp)) != 0 ){
         unsigned char *temp = malloc(dwarf_section_headers[i].size);
         if (temp == NULL){
             printf("Malloc Error!\n");
@@ -1606,13 +1124,6 @@ int parse_dwarf_segment(char *macho_str, long offset,struct segment_command *com
         }
         memset(temp, '\0', dwarf_section_headers[i].size);
         memcpy(temp, macho_str + dwarf_section_headers[i].offset, dwarf_section_headers[i].size);
-
-        //long temp_position = ftell(fp);
-        //fseek(fp, dwarf_section_headers[i].offset, SEEK_SET);
-        //int numofbytes = fread(temp, sizeof(char), dwarf_section_headers[i].size, fp);
-        //assert(numofbytes == dwarf_section_headers[i].size);
-        //seekreturn = fseek(fp, temp_position, SEEK_SET);
-        //assert(seekreturn == 0);
 
         if(strcmp(dwarf_section_headers[i].sectname, "__debug_abbrev") == 0){ 
             dwarf2_per_objfile->abbrev_buffer = temp;
@@ -1674,18 +1185,105 @@ int parse_dwarf_segment(char *macho_str, long offset,struct segment_command *com
         i++;
     }
     free(dwarf_section_headers);
-    //seekreturn = 0;
-    //seekreturn = fseek (fp, current_pos, SEEK_SET); 
-    //assert(seekreturn == 0);
+    return dwarf2_per_objfile;
 }
 
-void print_all_dwarf2_per_objfile(){
+
+struct dwarf2_per_objfile* parse_dwarf_segment_64(char *macho_str, long offset,struct segment_command_64 *command){
+    uint32_t numofdwarfsections = command->nsects;
+
+    struct dwarf2_per_objfile *dwarf2_per_objfile = malloc(sizeof(struct dwarf2_per_objfile));
+    memset(dwarf2_per_objfile, '\0', sizeof(struct dwarf2_per_objfile));
+
+    struct section_64 * dwarf_section_headers = malloc(numofdwarfsections * sizeof(struct section_64));
+    memset(dwarf_section_headers, '\0', numofdwarfsections * sizeof (struct section));
+    memcpy(dwarf_section_headers, macho_str + offset, numofdwarfsections * sizeof(struct section_64));
+
+    uint32_t i = 0;
+    while(i < numofdwarfsections){
+        //FIXME more the size more 4G
+        unsigned char *temp = malloc((uint32_t)dwarf_section_headers[i].size);
+        if (temp == NULL){
+            printf("Malloc Error!\n");
+            exit(-1);
+        }
+        memset(temp, '\0', (uint32_t)dwarf_section_headers[i].size);
+        memcpy(temp, macho_str + dwarf_section_headers[i].offset, (uint32_t)dwarf_section_headers[i].size);
+
+        if(strcmp(dwarf_section_headers[i].sectname, "__debug_abbrev") == 0){ 
+            dwarf2_per_objfile->abbrev_buffer = temp;
+            dwarf2_per_objfile->abbrev_size = (uint32_t)dwarf_section_headers[i].size;
+        }else if(strcmp(dwarf_section_headers[i].sectname, "__debug_aranges") == 0){
+            dwarf2_per_objfile->aranges_buffer = temp;
+            dwarf2_per_objfile->aranges_size = (uint32_t)dwarf_section_headers[i].size;
+        }else if(strcmp(dwarf_section_headers[i].sectname, "__debug_info") == 0){
+            dwarf2_per_objfile->info_buffer = temp;
+            dwarf2_per_objfile->info_size = (uint32_t)dwarf_section_headers[i].size;
+        }else if(strcmp(dwarf_section_headers[i].sectname, "__debug_inlined") == 0){
+            dwarf2_per_objfile->inlined_buffer = temp;
+            dwarf2_per_objfile->inlined_size = (uint32_t)dwarf_section_headers[i].size;
+        }else if(strcmp(dwarf_section_headers[i].sectname, "__debug_line") == 0){
+            dwarf2_per_objfile->line_buffer = temp;
+            dwarf2_per_objfile->line_size = (uint32_t)dwarf_section_headers[i].size;
+        }else if(strcmp(dwarf_section_headers[i].sectname, "__debug_loc") == 0){
+            dwarf2_per_objfile->loc_buffer = temp;
+            dwarf2_per_objfile->loc_size = (uint32_t)dwarf_section_headers[i].size;
+        }else if((strcmp(dwarf_section_headers[i].sectname, "__debug_pubnames") == 0) ||
+                (strcmp(dwarf_section_headers[i].sectname, "__debug_pubnames__DWARF") == 0)
+                ){
+            dwarf2_per_objfile->pubnames_buffer = temp;
+            dwarf2_per_objfile->pubnames_size = (uint32_t)dwarf_section_headers[i].size;
+        }else if((strcmp(dwarf_section_headers[i].sectname, "__debug_pubtypes") == 0) ||
+                (strcmp(dwarf_section_headers[i].sectname, "__debug_pubtypes__DWARF") == 0) 
+                ){
+            dwarf2_per_objfile->pubtypes_buffer = temp;
+            dwarf2_per_objfile->pubtypes_size = (uint32_t)dwarf_section_headers[i].size;
+        }else if(strcmp(dwarf_section_headers[i].sectname, "__debug_ranges") == 0){
+            dwarf2_per_objfile->ranges_buffer = temp;
+            dwarf2_per_objfile->ranges_size = (uint32_t)dwarf_section_headers[i].size;
+        }else if(strcmp(dwarf_section_headers[i].sectname, "__debug_str") == 0){
+            dwarf2_per_objfile->str_buffer = temp;
+            dwarf2_per_objfile->str_size = (uint32_t)dwarf_section_headers[i].size;
+        }else if(strcmp(dwarf_section_headers[i].sectname, "__debug_frame") == 0){
+            //do nothing for now
+            free(temp);
+        }else if(strcmp(dwarf_section_headers[i].sectname, "__apple_names") == 0){
+            //do nothing for now
+            free(temp);
+        }else if(strcmp(dwarf_section_headers[i].sectname, "__apple_types") == 0){
+            //do nothing for now
+            free(temp);
+        }else if((strcmp(dwarf_section_headers[i].sectname, "__apple_namespa") == 0) ||
+                (strcmp(dwarf_section_headers[i].sectname, "__apple_namespac__DWARF") == 0) 
+                ){
+            //do nothing for now
+            free(temp);
+        }else if(strcmp(dwarf_section_headers[i].sectname, "__apple_objc") == 0){
+            //do nothing for now
+            free(temp);
+        }else{
+            printf("╮(╯▽╰)╭, %s \n", dwarf_section_headers[i].sectname);
+            free(temp);
+        }
+        //}
+        //rc = 0;
+        i++;
+    }
+    free(dwarf_section_headers);
+    return dwarf2_per_objfile;
+}
+
+void print_all_dwarf2_per_objfile(struct dwarf2_per_objfile *dwarf2_per_objfile){
     int i = 0;
+    printf("abbrev_buffer:\n");
     for (i =0; i< dwarf2_per_objfile->abbrev_size; i++){
         printf("%02x", dwarf2_per_objfile->abbrev_buffer[i]);
     }
     printf("\n");
     printf("\n");
+    printf("\n");
+    printf("\n");
+    printf("aranges_buffer:\n");
 
     for (i =0; i< dwarf2_per_objfile->aranges_size; i++){
         printf("%02x", dwarf2_per_objfile->aranges_buffer[i]);
@@ -1693,27 +1291,39 @@ void print_all_dwarf2_per_objfile(){
     }
     printf("\n");
     printf("\n");
+    printf("\n");
+    printf("\n");
 
+    printf("info_buffer:\n");
     for (i =0; i< dwarf2_per_objfile->info_size; i++){
         printf("%02x", dwarf2_per_objfile->info_buffer[i]);
 
     }
     printf("\n");
     printf("\n");
+    printf("\n");
+    printf("\n");
 
+    printf("inlined_buffer:\n");
     for (i =0; i< dwarf2_per_objfile->inlined_size; i++){
         printf("%02x", dwarf2_per_objfile->inlined_buffer[i]);
 
     }
     printf("\n");
     printf("\n");
+    printf("\n");
+    printf("\n");
 
+    printf("line_buffer:\n");
     for (i =0; i< dwarf2_per_objfile->line_size; i++){
         printf("%02x", dwarf2_per_objfile->line_buffer[i]);
 
     }
     printf("\n");
     printf("\n");
+    printf("\n");
+    printf("\n");
+    printf("loc_buffer:\n");
 
     for (i =0; i< dwarf2_per_objfile->loc_size; i++){
         printf("%02x", dwarf2_per_objfile->loc_buffer[i]);
@@ -1721,13 +1331,19 @@ void print_all_dwarf2_per_objfile(){
     }
     printf("\n");
     printf("\n");
+    printf("\n");
+    printf("\n");
 
+    printf("pubnames_buffer:\n");
     for (i =0; i< dwarf2_per_objfile->pubnames_size; i++){
         printf("%02x", dwarf2_per_objfile->pubnames_buffer[i]);
 
     }
     printf("\n");
     printf("\n");
+    printf("\n");
+    printf("\n");
+    printf("pubtypes_buffer:\n");
 
     for (i =0; i< dwarf2_per_objfile->pubtypes_size; i++){
         printf("%02x", dwarf2_per_objfile->pubtypes_buffer[i]);
@@ -1735,13 +1351,19 @@ void print_all_dwarf2_per_objfile(){
     }
     printf("\n");
     printf("\n");
+    printf("\n");
+    printf("\n");
 
+    printf("ranges_buffer:\n");
     for (i =0; i< dwarf2_per_objfile->ranges_size; i++){
         printf("%02x", dwarf2_per_objfile->ranges_buffer[i]);
 
     }
     printf("\n");
     printf("\n");
+    printf("\n");
+    printf("\n");
+    printf("str_size:\n");
 
     for (i =0; i< dwarf2_per_objfile->str_size; i++){
         printf("%02x", dwarf2_per_objfile->str_buffer[i]);
@@ -1749,10 +1371,12 @@ void print_all_dwarf2_per_objfile(){
     }
     printf("\n");
     printf("\n");
+    printf("\n");
+    printf("\n");
 }
 
 
-void parse_normal(FILE *fp, struct target_file *tf){
+int parse_normal(FILE *fp, uint32_t magic_number, struct target_file *tf){
     tf->numofarchs = 1;
     tf->thin_machos = malloc(1 *sizeof(struct thin_macho*));
     memset(tf->thin_machos, '\0', 1 * sizeof(struct thin_macho*));
@@ -1770,9 +1394,21 @@ void parse_normal(FILE *fp, struct target_file *tf){
     numofbytes = fread(tf->thin_machos[0]->data, sizeof(char), size, fp);
     assert(numofbytes == size);
     parse_macho(tf->thin_machos[0]);
+    return 0;
 }
 
-int parse_file(const char *filename){
+
+void free_target_file(struct target_file *tf){
+    uint32_t i = 0;
+    while(i < tf->numofarchs){
+        free(tf->thin_machos[i]->data);
+        free(tf->thin_machos[i]->dwarf2_per_objfile);
+        free(tf->thin_machos[i]);
+        i++;
+    }
+}
+
+struct target_file *parse_file(const char *filename){
     FILE *fp = fopen(filename, "rb");
     if (fp == NULL){
         printf("Read File Error.\n");
@@ -1794,43 +1430,40 @@ int parse_file(const char *filename){
     {
         seekreturn = fseek (fp, 0 - sizeof(uint32_t), SEEK_CUR); 
         assert(seekreturn == 0);
-        printf("magic_number: %x\n", magic_number);
+        //printf("magic_number: %x\n", magic_number);
         switch(magic_number){
             case MH_MAGIC:
                 //current machine endian is same with host machine
-                //printf("MH_MAGIC: %x\n", MH_MAGIC);
-                parse_normal(fp, tf);
+                parse_normal(fp, MH_MAGIC, tf);
                 break;
             case MH_MAGIC_64:
                 //current machine endian is same with host machine
-                printf("MH_MAGIC_64: %x\n", MH_MAGIC_64);
+                parse_normal(fp, MH_MAGIC_64, tf);
                 break;
             case MH_CIGAM:
-                //current machine endian is not same with host machine
                 printf("MH_CIGAM: %x\n", MH_CIGAM);
+                exit(-1);
                 break;
             case MH_CIGAM_64:
                 //current machine endian is not same with host machine
                 printf("MH_CIGAM_64: %x\n", MH_CIGAM_64);
+                exit(-1);
                 break;
             case FAT_MAGIC:
                 //current machine is big endian
-                //printf("FAT_MAGIC: %x\n", FAT_MAGIC);
                 parse_universal(fp, FAT_MAGIC, tf);
                 break;
             case FAT_CIGAM:
                 //current machie is small endian
-                //printf("FAT_CIGAM: %x\n", FAT_CIGAM);
                 parse_universal(fp, FAT_CIGAM, tf);
                 break;
             default:
-                printf("unknown file type.");
+                printf("atos cannot load symbols for the file test.el for architecture %s.", "i386");
                 exit(-1);
         }
     } 
-    //printf("close file\n");
     fclose(fp); 
-    return 0;
+    return tf;
 }
 void int32_endian_convert(int32_t *num)
 {
@@ -1937,23 +1570,61 @@ int parse_universal(FILE *fp, uint32_t magic_number, struct target_file *tf){
     }
     //TODO
     parse_macho(tf->thin_machos[1]);
-}
-
-void read_struct_from_str(void *dest, char **macho_str, size_t len){
-    memcpy(dest, *macho_str, len);
-    *macho_str += len;
+    return 0;
 }
 
 int parse_macho(struct thin_macho*tm){
     char *macho_str = tm->data;
-    int rc = 0;    
-    struct mach_header mh = {0};
+    
     int num_load_cmds = 0;
     long offset = 0;
-    
-    memcpy(&mh, macho_str + offset, sizeof(struct mach_header)); 
-    offset += sizeof(struct mach_header);
-    num_load_cmds = mh.ncmds;
+    size_t header_size = 0;
+
+    uint32_t magic_number = 0;
+    memcpy(&magic_number, macho_str, sizeof(uint32_t)); 
+    //printf("magic_number: %x\n", magic_number);
+    switch(magic_number){
+        case MH_MAGIC:
+            {
+                //current machine endian is same with host machine
+                //printf("MH_MAGIC: %x\n", MH_MAGIC);
+                //parse_normal(fp, MH_MAGIC, tf);
+                struct mach_header mh = {0};
+                header_size = sizeof(struct mach_header);
+                memcpy(&mh, macho_str + offset, header_size); 
+                num_load_cmds = mh.ncmds;
+                break;
+            }
+        case MH_MAGIC_64:
+            {
+                //current machine endian is same with host machine
+                //printf("MH_MAGIC_64: %x\n", MH_MAGIC_64);
+                //parse_normal(fp, MH_MAGIC_64, tf);
+                struct mach_header_64 mh64 = {0};
+                header_size = sizeof(struct mach_header_64);
+                memcpy(&mh64, macho_str + offset, header_size); 
+                num_load_cmds = mh64.ncmds;
+                break;
+            }
+        case MH_CIGAM:
+            //current machine endian is not same with host machine
+            //printf("MH_CIGAM: %x\n", MH_CIGAM);
+            break;
+        case MH_CIGAM_64:
+            //current machine endian is not same with host machine
+            //printf("MH_CIGAM_64: %x\n", MH_CIGAM_64);
+            break;
+        case FAT_MAGIC:
+        case FAT_CIGAM:
+            printf("fat in fat?\n");
+            exit(-1);
+            break;
+        default:
+            printf("atos cannot load symbols for the file test.el for architecture %s.", "i386");
+            exit(-1);
+    }
+
+    offset += header_size;
 
     struct load_command lc = {0}; 
     int i = 0;
@@ -1962,7 +1633,7 @@ int parse_macho(struct thin_macho*tm){
         //because we will try to read the actual load_command depend on 
         //load_command type, so we do not need to add the offset.
         //offset += sizeof(struct load_command);
-        parse_load_command(macho_str, &offset, &lc);
+        parse_load_command(macho_str, &offset, &lc, tm);
         i++;
     }
 //    printf("finished\n");
@@ -2047,7 +1718,7 @@ unsigned int get_num_attr_spec_pair(unsigned char* info_ptr){
     }
     return num_attr_spec_pair;
 }
-
+//TODO
 void free_dwarf_abbrev(){
 
 }
@@ -2055,8 +1726,7 @@ void free_dwarf_abbrev(){
 
 /* Release the memory used by the abbrev table for a compilation unit.  */
 
-    static void
-dwarf2_free_abbrev_table (void *ptr_to_cu)
+static void dwarf2_free_abbrev_table (void *ptr_to_cu)
 {
     struct dwarf2_cu *cu = ptr_to_cu;
 
@@ -2084,86 +1754,6 @@ dwarf2_lookup_abbrev (unsigned int number, struct dwarf2_cu *cu)
     }
     return NULL;
 }
-
-
-/* When we construct a partial symbol table entry we only
-   need this much information. */
-//struct partial_die_info{
-//    /* Offset of this DIE.  */
-//    unsigned int offset;
-//
-//    /* DWARF-2 tag for this DIE.  */
-//    enum dwarf_tag tag;		/* Tag indicating type of die */
-//
-//    /* Language code associated with this DIE.  This is only used
-//       for the compilation unit DIE.  */
-//    unsigned int language : 8;
-//
-//    /* Assorted flags describing the data found in this DIE.  */
-//    unsigned int has_children : 1;
-//    unsigned int is_external : 1;
-//    unsigned int is_declaration : 1;
-//    unsigned int has_type : 1;
-//    unsigned int has_specification : 1;
-//    unsigned int has_stmt_list : 1;
-//    unsigned int has_pc_info : 1;
-//    /* APPLE LOCAL begin dwarf repository  */
-//    unsigned int has_repo_specification : 1;
-//    unsigned int has_repository : 1;
-//    unsigned int has_repository_type : 1;
-//    /* APPLE LOCAL end dwarf repository  */
-//
-//    /* Flag set if the SCOPE field of this structure has been
-//       computed.  */
-//    unsigned int scope_set : 1;
-//
-//    /* The name of this DIE.  Normally the value of DW_AT_name, but
-//       sometimes DW_TAG_MIPS_linkage_name or a string computed in some
-//       other fashion.  */
-//    char *name;
-//    char *dirname;
-//
-//    /* The scope to prepend to our children.  This is generally
-//       allocated on the comp_unit_obstack, so will disappear
-//       when this compilation unit leaves the cache.  */
-//    //char *scope;
-//
-//    /* The location description associated with this DIE, if any.  */
-//    //struct dwarf_block *locdesc;
-//
-//    /* If HAS_PC_INFO, the PC range associated with this DIE.  */
-//    CORE_ADDR lowpc;
-//    CORE_ADDR highpc;
-//
-//    /* Pointer into the info_buffer pointing at the target of
-//       DW_AT_sibling, if any.  */
-//    char *sibling;
-//
-//    /* If HAS_SPECIFICATION, the offset of the DIE referred to by
-//       DW_AT_specification (or DW_AT_abstract_origin or
-//       DW_AT_extension).  */
-//    unsigned int spec_offset;
-//
-//    /* APPLE LOCAL begin dwarf repository  */
-//    /* If HAS_REPO_SPECIFICATION, the id of the DIE in the sql
-//       repository referred to by DW_AT_APPLE_repository_specification.  */
-//
-//    unsigned int repo_spec_id;
-//    
-//    /* The filename of the dwarf sql repository file, if one was used.  */
-//
-//    char *repo_name;
-//    /* APPLE LOCAL end dwarf repository  */
-//
-//    /* If HAS_STMT_LIST, the offset of the Line Number Information data.  */
-//    unsigned int line_offset;
-//
-//    /* Pointers to this DIE's parent, first child, and next sibling,
-//       if any.  */
-//    struct partial_die_info *die_parent, *die_child, *die_sibling;
-//};
-//
-
 
 unsigned char * read_comp_unit_head (struct comp_unit_head *header, char *info_ptr)
 {
@@ -2195,12 +1785,6 @@ unsigned char * read_comp_unit_head (struct comp_unit_head *header, char *info_p
     return info_ptr;
 }
 
-
-//---------------------
-//
-//
-
-
 /* Read the initial uleb128 in the die at current position in compilation unit CU.
    Return the corresponding abbrev, or NULL if the number is zero (indicating
    an empty DIE).  In either case *BYTES_READ will be set to the length of
@@ -2226,250 +1810,6 @@ static struct abbrev_info * peek_die_abbrev (char *info_ptr, unsigned int *bytes
     return abbrev;
 }
 
-
-
-
-/* Build the partial symbol table by doing a quick pass through the
-   .debug_info and .debug_abbrev sections.  */
-
-//static void
-//dwarf2_build_psymtabs_hard (struct objfile *objfile, int mainline)
-//{
-//  /* Instead of reading this into a big buffer, we should probably use
-//     mmap()  on architectures that support it. (FIXME) */
-//  bfd *abfd = objfile->obfd;
-//  char *info_ptr;
-//  char *beg_of_comp_unit;
-//  struct partial_die_info comp_unit_die;
-//  struct partial_symtab *pst;
-//  struct cleanup *back_to;
-//  CORE_ADDR lowpc, highpc, baseaddr;
-//
-//  /* APPLE LOCAL begin dwarf repository  */
-//  if (bfd_big_endian (abfd) == BFD_ENDIAN_BIG)
-//    byte_swap_p = 0;
-//  else
-//    byte_swap_p = 1;
-//  /* APPLE LOCAL end dwarf repository  */
-//  info_ptr = dwarf2_per_objfile->info_buffer;
-//
-//  /* Any cached compilation units will be linked by the per-objfile
-//     read_in_chain.  Make sure to free them when we're done.  */
-//  back_to = make_cleanup (free_cached_comp_units, NULL);
-//
-//  create_all_comp_units (objfile);
-//
-//  /* Since the objects we're extracting from .debug_info vary in
-//     length, only the individual functions to extract them (like
-//     read_comp_unit_head and load_partial_die) can really know whether
-//     the buffer is large enough to hold another complete object.
-//
-//     At the moment, they don't actually check that.  If .debug_info
-//     holds just one extra byte after the last compilation unit's dies,
-//     then read_comp_unit_head will happily read off the end of the
-//     buffer.  read_partial_die is similarly casual.  Those functions
-//     should be fixed.
-//
-//     For this loop condition, simply checking whether there's any data
-//     left at all should be sufficient.  */
-//  while (info_ptr < (dwarf2_per_objfile->info_buffer
-//		     + dwarf2_per_objfile->info_size))
-//    {
-//      struct cleanup *back_to_inner;
-//      struct dwarf2_cu cu;
-//      struct abbrev_info *abbrev;
-//      unsigned int bytes_read;
-//      struct dwarf2_per_cu_data *this_cu;
-//
-//      beg_of_comp_unit = info_ptr;
-//
-//      memset (&cu, 0, sizeof (cu));
-//
-//      obstack_init (&cu.comp_unit_obstack);
-//
-//      back_to_inner = make_cleanup (free_stack_comp_unit, &cu);
-//
-//      cu.objfile = objfile;
-//      info_ptr = partial_read_comp_unit_head (&cu.header, info_ptr, abfd);
-//
-//      /* Complete the cu_header */
-//      cu.header.offset = beg_of_comp_unit - dwarf2_per_objfile->info_buffer;
-//      cu.header.first_die_ptr = info_ptr;
-//      cu.header.cu_head_ptr = beg_of_comp_unit;
-//
-//      cu.list_in_scope = &file_symbols;
-//
-//      /* Read the abbrevs for this compilation unit into a table */
-//      dwarf2_read_abbrevs (abfd, &cu);
-//      make_cleanup (dwarf2_free_abbrev_table, &cu);
-//
-//      this_cu = dwarf2_find_comp_unit (cu.header.offset, objfile);
-//
-//      /* Read the compilation unit die */
-//      /* APPLE LOCAL Add cast to avoid type mismatch in arg2 warning.  */
-//      abbrev = peek_die_abbrev (info_ptr, (int *) &bytes_read, &cu);
-//      info_ptr = read_partial_die (&comp_unit_die, abbrev, bytes_read,
-//				   abfd, info_ptr, &cu);
-//      /* APPLE LOCAL begin dwarf repository  */
-//      if (comp_unit_die.has_repository)
-//	{
-//	  dwarf2_read_repository_abbrevs (&cu);
-//	  set_repository_cu_language (comp_unit_die.language, &cu);
-//	}
-//      /* APPLE LOCAL end dwarf repository  */
-//
-//      /* Set the language we're debugging */
-//      set_cu_language (comp_unit_die.language, &cu);
-//
-//      /* Allocate a new partial symbol table structure */
-//      pst = start_psymtab_common (objfile, objfile->section_offsets,
-//				  comp_unit_die.name ? comp_unit_die.name : "",
-//				  comp_unit_die.lowpc,
-//				  objfile->global_psymbols.next,
-//				  objfile->static_psymbols.next);
-//
-//      if (comp_unit_die.dirname)
-//	pst->dirname = xstrdup (comp_unit_die.dirname);
-//
-//      pst->read_symtab_private = (char *) this_cu;
-//
-//      baseaddr = ANOFFSET (objfile->section_offsets, SECT_OFF_TEXT (objfile));
-//
-//      /* Store the function that reads in the rest of the symbol table */
-//      pst->read_symtab = dwarf2_psymtab_to_symtab;
-//
-//      /* If this compilation unit was already read in, free the
-//	 cached copy in order to read it in again.  This is
-//	 necessary because we skipped some symbols when we first
-//	 read in the compilation unit (see load_partial_dies).
-//	 This problem could be avoided, but the benefit is
-//	 unclear.  */
-//      if (this_cu->cu != NULL)
-//	free_one_cached_comp_unit (this_cu->cu);
-//
-//      cu.per_cu = this_cu;
-//
-//      /* Note that this is a pointer to our stack frame, being
-//	 added to a global data structure.  It will be cleaned up
-//	 in free_stack_comp_unit when we finish with this
-//	 compilation unit.  */
-//      this_cu->cu = &cu;
-//
-//      this_cu->psymtab = pst;
-//
-//      /* Check if comp unit has_children.
-//         If so, read the rest of the partial symbols from this comp unit.
-//         If not, there's no more debug_info for this comp unit. */
-//      if (comp_unit_die.has_children)
-//	{
-//	  struct partial_die_info *first_die;
-//
-//	  lowpc = ((CORE_ADDR) -1);
-//	  highpc = ((CORE_ADDR) 0);
-//
-//	  first_die = load_partial_dies (abfd, info_ptr, 1, &cu);
-//
-//	  scan_partial_symbols (first_die, &lowpc, &highpc, &cu);
-//
-//	  /* If we didn't find a lowpc, set it to highpc to avoid
-//	     complaints from `maint check'.  */
-//	  if (lowpc == ((CORE_ADDR) -1))
-//	    lowpc = highpc;
-//
-//	  /* If the compilation unit didn't have an explicit address range,
-//	     then use the information extracted from its child dies.  */
-//	  if (! comp_unit_die.has_pc_info)
-//	    {
-//	      comp_unit_die.lowpc = lowpc;
-//	      comp_unit_die.highpc = highpc;
-//	    }
-//	}
-//      pst->textlow = comp_unit_die.lowpc + baseaddr;
-//      pst->texthigh = comp_unit_die.highpc + baseaddr;
-//
-//      pst->n_global_syms = objfile->global_psymbols.next -
-//	(objfile->global_psymbols.list + pst->globals_offset);
-//      pst->n_static_syms = objfile->static_psymbols.next -
-//	(objfile->static_psymbols.list + pst->statics_offset);
-//      sort_pst_symbols (pst);
-//
-//      /* If there is already a psymtab or symtab for a file of this
-//         name, remove it. (If there is a symtab, more drastic things
-//         also happen.) This happens in VxWorks.  */
-//      free_named_symtabs (pst->filename);
-//
-//      info_ptr = beg_of_comp_unit + cu.header.length
-//                                  + cu.header.initial_length_size;
-//
-//      if (comp_unit_die.has_stmt_list)
-//        {
-//          /* Get the list of files included in the current compilation unit,
-//             and build a psymtab for each of them.  */
-//          dwarf2_build_include_psymtabs (&cu, &comp_unit_die, pst);
-//        }
-//
-//      do_cleanups (back_to_inner);
-//    }
-//  do_cleanups (back_to);
-//}
-
-
-/* Load the DIEs for a secondary CU into memory.  */
-
-//static void load_comp_unit (struct dwarf2_per_cu_data *this_cu, struct objfile *objfile)
-//{
-//  bfd *abfd = objfile->obfd;
-//  char *info_ptr, *beg_of_comp_unit;
-//  struct partial_die_info comp_unit_die;
-//  struct dwarf2_cu *cu;
-//  struct abbrev_info *abbrev;
-//  unsigned int bytes_read;
-//  struct cleanup *back_to;
-//
-//  info_ptr = dwarf2_per_objfile->info_buffer + this_cu->offset;
-//  beg_of_comp_unit = info_ptr;
-//
-//  cu = xmalloc (sizeof (struct dwarf2_cu));
-//  memset (cu, 0, sizeof (struct dwarf2_cu));
-//
-//  obstack_init (&cu->comp_unit_obstack);
-//
-//  cu->objfile = objfile;
-//  info_ptr = partial_read_comp_unit_head (&cu->header, info_ptr, abfd);
-//
-//  /* Complete the cu_header.  */
-//  cu->header.offset = beg_of_comp_unit - dwarf2_per_objfile->info_buffer;
-//  cu->header.first_die_ptr = info_ptr;
-//  cu->header.cu_head_ptr = beg_of_comp_unit;
-//
-//  /* Read the abbrevs for this compilation unit into a table.  */
-//  dwarf2_read_abbrevs (abfd, cu);
-//  back_to = make_cleanup (dwarf2_free_abbrev_table, cu);
-//
-//  /* Read the compilation unit die.  */
-//  /* APPLE LOCAL Add cast to avoid type mismatch in arg2 warning.  */
-//  abbrev = peek_die_abbrev (info_ptr, (int *) &bytes_read, cu);
-//  info_ptr = read_partial_die (&comp_unit_die, abbrev, bytes_read,
-//			       abfd, info_ptr, cu);
-//
-//  /* Set the language we're debugging.  */
-//  set_cu_language (comp_unit_die.language, cu);
-//
-//  /* Link this compilation unit into the compilation unit tree.  */
-//  this_cu->cu = cu;
-//  cu->per_cu = this_cu;
-//
-//  /* Check if comp unit has_children.
-//     If so, read the rest of the partial symbols from this comp unit.
-//     If not, there's no more debug_info for this comp unit. */
-//  if (comp_unit_die.has_children)
-//    load_partial_dies (abfd, info_ptr, 0, cu);
-//
-//  do_cleanups (back_to);
-//}
-
-
-
 static char * read_n_bytes (unsigned char *buf, unsigned int size)
 {
     /* If the size of a host char is 8 bits, we can return a pointer
@@ -2489,19 +1829,16 @@ static CORE_ADDR read_address_of_arange (char *buf, struct arange *arange, int *
         case 4:
             retval = read_signed_32(buf);
             break;
-            //case 8:
-            //    retval = bfd_get_signed_64 (abfd, (bfd_byte *) buf);
-            //    break;
+        case 8:
+            retval = read_signed_64(buf);
+            break;
         default:
-            printf("read address: bad switch, signed\n");
+            printf("1836read address: bad switch, signed\n");
     }
     *bytes_read = arange->aranges_header.addr_size;
     return retval;
 }
 
-//CORE_ADDR read_signed_64(char *buf){
-//    return (*buf + *(buf+1) << 8 + *(buf + 2) << 16 + *(buf + 3) << 24);
-//}
 //FIXME add cu_header->addr_size
 
 /* memory allocation interface */
@@ -2544,6 +1881,7 @@ static char * read_indirect_string (char *buf, const struct comp_unit_head *cu_h
 static char * read_attribute_value (struct attribute *attr, unsigned int form, char *info_ptr, struct dwarf2_cu *cu)
 {
     struct comp_unit_head *cu_header = &cu->header;
+    struct dwarf2_per_objfile *dwarf2_per_objfile = cu->dwarf2_per_objfile;
     unsigned int bytes_read;
     struct dwarf_block *blk;
 
@@ -2696,7 +2034,6 @@ static char * read_full_die (struct die_info **diep, unsigned char *info_ptr,
     struct die_info *die;
     char *comp_dir = NULL;
 
-    //offset = info_ptr - dwarf2_per_objfile->info_buffer;
     abbrev_number = read_unsigned_leb128 (info_ptr, &bytes_read);
     info_ptr += bytes_read;
     if (!abbrev_number)
@@ -2784,14 +2121,12 @@ static char * read_full_die (struct die_info **diep, unsigned char *info_ptr,
 }
 
 
-static struct die_info * read_die_and_children (char *info_ptr, struct dwarf2_cu *cu, char **new_info_ptr, struct die_info *parent);
 /* Read a whole compilation unit into a linked list of dies.  */
 
 static struct die_info * read_comp_unit (char *info_ptr, struct dwarf2_cu *cu)
 {
     return read_die_and_children (info_ptr, cu, &info_ptr, NULL);
 }
-static struct die_info * read_die_and_siblings (char *info_ptr, struct dwarf2_cu *cu, char **new_info_ptr, struct die_info *parent);
 
 /* Read a single die and all its descendents.  Set the die's sibling
    field to NULL; set other fields in the die correctly, and set all
@@ -2861,70 +2196,12 @@ static struct die_info * read_die_and_siblings (char *info_ptr, struct dwarf2_cu
     }
 }
 
-
-/* Load the DIEs for a secondary CU into memory.  */
-
-static void load_comp_unit(unsigned char* info_ptr){
-    struct dwarf2_cu *cu;
-    struct die_info comp_unit_die;
-    struct abbrev_info *abbrev;
-    unsigned int bytes_read;
-    //struct cleanup *back_to;
-
-    //info_ptr = dwarf2_per_objfile->info_buffer + this_cu->offset;
-    //beg_of_comp_unit = info_ptr;
-
-    cu = malloc (sizeof (struct dwarf2_cu));
-    memset (cu, 0, sizeof (struct dwarf2_cu));
-
-    cu->dwarf2_abbrevs = dwarf2_abbrevs;
-    //obstack_init (&cu->comp_unit_obstack);
-
-    //cu->objfile = objfile;
-    info_ptr = read_comp_unit_head (&cu->header, info_ptr);
-
-    /* Complete the cu_header.  */
-    //cu->header.offset = beg_of_comp_unit - dwarf2_per_objfile->info_buffer;
-    //cu->header.first_die_ptr = info_ptr;
-    //cu->header.cu_head_ptr = beg_of_comp_unit;
-
-    /* Read the abbrevs for this compilation unit into a table.  */
-    //parse_dwarf_abbrev(cu);
-    //back_to = make_cleanup (dwarf2_free_abbrev_table, cu);
-
-    /* Read the compilation unit die.  */
-    /* APPLE LOCAL Add cast to avoid type mismatch in arg2 warning.  */
-    abbrev = peek_die_abbrev (info_ptr, &bytes_read, cu);
-    //FIXME
-    //info_ptr = read_partial_die (&comp_unit_die, abbrev, bytes_read,
-    //	      info_ptr, cu);
-
-    /* Set the language we're debugging.  */
-    //FIXME
-    //set_cu_language (comp_unit_die.language, cu);
-
-    /* Link this compilation unit into the compilation unit tree.  */
-    //this_cu->cu = cu;
-    //cu->per_cu = this_cu;
-
-    /* Check if comp unit has_children.
-       If so, read the rest of the partial symbols from this comp unit.
-       If not, there's no more debug_info for this comp unit. */
-    //if (comp_unit_die.has_children)
-
-
-    //TODO ADDD
-    //if (comp_unit_die.has_children)
-    //  load_partial_dies (abfd, info_ptr, 0, cu);
-}
-//---------------------
-
-
 /* Load the DIEs associated with PST and PER_CU into memory.  */
 /* APPLE LOCAL debug map: Accept an optional 2nd parameter ADDR_MAP */
 
-static struct dwarf2_cu * load_full_comp_unit (struct dwarf2_per_cu_data *per_cu)
+static struct dwarf2_cu * load_full_comp_unit (struct dwarf2_per_objfile *dwarf2_per_objfile, int i)
 {
+    struct dwarf2_per_cu_data *per_cu = dwarf2_per_objfile->all_comp_units[i];
     //struct partial_symtab *pst = per_cu->psymtab;
     //bfd *abfd = pst->objfile->obfd;
     struct dwarf2_cu *cu;
@@ -2943,6 +2220,7 @@ static struct dwarf2_cu * load_full_comp_unit (struct dwarf2_per_cu_data *per_cu
 
     cu = malloc (sizeof (struct dwarf2_cu));
     memset (cu, 0, sizeof (struct dwarf2_cu));
+    cu->dwarf2_per_objfile = dwarf2_per_objfile;
 
     /* If an error occurs while loading, release our storage.  */
     //free_cu_cleanup = make_cleanup (free_one_comp_unit, cu);
@@ -3000,7 +2278,7 @@ static struct dwarf2_cu * load_full_comp_unit (struct dwarf2_per_cu_data *per_cu
    there will be many, and one will occur early in the .debug_info section.
    So there's no point in building this list incrementally.  */
 
-static void create_all_comp_units ()
+static void create_all_comp_units(struct dwarf2_per_objfile *dwarf2_per_objfile)
 {
     int n_allocated;
     int n_comp_units;
@@ -3051,12 +2329,8 @@ static void create_all_comp_units ()
     dwarf2_per_objfile->n_comp_units = n_comp_units;
 }
 
-
-
-
-
 //free abbrev hash
-void parse_dwarf_abbrev(){
+void parse_dwarf_abbrev(struct dwarf2_per_objfile *dwarf2_per_objfile){
     //allocate space form the abbrev hash
     dwarf2_abbrevs = malloc(sizeof(struct abbrev_info *) * ABBREV_HASH_SIZE);
     memset(dwarf2_abbrevs, 0, sizeof(struct abbrev_info *) * ABBREV_HASH_SIZE);
@@ -3126,7 +2400,6 @@ void parse_dwarf_abbrev(){
         //}
         //prev = ai;
         //if(i == 0){
-        //    dwarf_abbrevs = prev;
         //}
         i++;
     }
@@ -3138,13 +2411,13 @@ void free_dwarf_cu(struct dwarf2_cu *cu){
 }
 
 
-void parse_dwarf_info(){
-    create_all_comp_units();
+void parse_dwarf_info(struct dwarf2_per_objfile *dwarf2_per_objfile){
+    create_all_comp_units(dwarf2_per_objfile);
     int i = 0;
     struct dwarf2_cu *temp = NULL;
     for (i = 0; i< dwarf2_per_objfile->n_comp_units; i++){
         //printf("Load comp_units %d\n", i);
-        temp = load_full_comp_unit(dwarf2_per_objfile->all_comp_units[i]);
+        temp = load_full_comp_unit(dwarf2_per_objfile, i);
     }
     //unsigned char * info_ptr = dwarf2_per_objfile->info_buffer;
     //int size = dwarf2_per_objfile->info_size;
@@ -3176,8 +2449,24 @@ unsigned int get_num_arange_descriptor(char *aranges_ptr, struct arange *arange)
     while(1){
         beginning_addr = read_address_of_arange(aranges_ptr, arange, &bytes_read);
         aranges_ptr += bytes_read;
-        length = read_4_bytes(aranges_ptr);
-        aranges_ptr += 4;
+
+        switch (arange->aranges_header.addr_size){
+            case 2:
+                length = read_signed_16(aranges_ptr);
+                aranges_ptr += 2;
+                break;
+            case 4:
+                length = read_signed_32(aranges_ptr);
+                aranges_ptr += 4;
+                break;
+            case 8:
+                length = read_signed_64(aranges_ptr);
+                aranges_ptr += 8;
+                break;
+            default:
+                printf("read address length offset: bad switch, signed\n");
+                exit(-1);
+        }
         if(beginning_addr == 0 && length == 0){
             break;
         }
@@ -3197,7 +2486,7 @@ void print_aranges(struct arange **all_aranges, unsigned int num){
     }
 }
 
-static void create_all_aranges()
+static void parse_dwarf_aranges(struct dwarf2_per_objfile *dwarf2_per_objfile)
 {
 
     int n_allocated;
@@ -3263,18 +2552,37 @@ static void create_all_aranges()
         CORE_ADDR beginning_addr = 0;
         unsigned int length = 0;
         int i = 0;
+        int aranges_header_addr_size = 0;
         for(i = 0; i < num_of_ards; i++){
             arange->address_range_descriptors[i].beginning_addr = read_address_of_arange(aranges_ptr, arange, &bytes_read);
             aranges_ptr += bytes_read;
-
-            arange->address_range_descriptors[i].length = read_4_bytes(aranges_ptr);
-            aranges_ptr += 4;
+            //save the address size for skipping the right number of bytes from the end of address_range_descriptors
+            aranges_header_addr_size = bytes_read;
+            switch (arange->aranges_header.addr_size){
+                case 2:
+                    arange->address_range_descriptors[i].length = read_signed_16(aranges_ptr);
+                    aranges_ptr += 2;
+                    break;
+                case 4:
+                    arange->address_range_descriptors[i].length = read_signed_32(aranges_ptr);
+                    aranges_ptr += 4;
+                    break;
+                case 8:
+                    arange->address_range_descriptors[i].length = read_signed_64(aranges_ptr);
+                    aranges_ptr += 8;
+                    break;
+                default:
+                    printf("read address length offset: bad switch, signed\n");
+                    exit(-1);
+            }
+ 
+            //arange->address_range_descriptors[i].length = read_4_bytes(aranges_ptr);
 
             //    printf("beginning_addr: 0X%X\t", arange->address_range_descriptors[i].beginning_addr);
             //    printf("length: 0X%X\n", arange->address_range_descriptors[i].length);
         }
         //skip ending zeros
-        aranges_ptr += 8;
+        aranges_ptr += (2 * aranges_header_addr_size);
         //    /* Save the compilation unit for later lookup.  */
         //    this_cu = malloc(sizeof (struct dwarf2_per_cu_data));
         //    memset (this_cu, 0, sizeof (*this_cu));
@@ -3297,14 +2605,6 @@ static void create_all_aranges()
     memcpy (dwarf2_per_objfile->all_aranges, all_aranges, n_aranges * sizeof (struct arange *));
     free (all_aranges);
     dwarf2_per_objfile->n_aranges = n_aranges;
-}
-
-
-
-void parse_dwarf_aranges(){
-    create_all_aranges();
-    //print_aranges(dwarf2_per_objfile->all_aranges, dwarf2_per_objfile->n_aranges);
-    //    struct aranges_header;
 }
 
 int is_target_subprogram(struct die_info *die, struct address_range_descriptor *target_ard){
@@ -3391,10 +2691,9 @@ int get_lineno_for_address(struct subfile *subfile, CORE_ADDR address){
     return 0;
 }
 
-
-
-void lookup_by_address(long int integer_address){
+void lookup_by_address(struct thin_macho *thin_macho, long int integer_address){
     CORE_ADDR address = (CORE_ADDR)integer_address;
+    struct dwarf2_per_objfile* dwarf2_per_objfile = thin_macho->dwarf2_per_objfile;
     unsigned int num = dwarf2_per_objfile->n_aranges;
     struct arange **all_aranges = dwarf2_per_objfile->all_aranges; 
     struct arange *target_arange = NULL;
@@ -3470,23 +2769,22 @@ void lookup_by_address(long int integer_address){
     printf("%s (in %s) (%s:%d)\n", target_subprogram_name, project_name, target_program_name, lineno);
 }
 
-int parse_dwarf2_per_objfile(){
-    parse_dwarf_abbrev();
-    parse_dwarf_info();
-    parse_dwarf_aranges();
+int parse_dwarf2_per_objfile(struct dwarf2_per_objfile *dwarf2_per_objfile){
+    parse_dwarf_abbrev(dwarf2_per_objfile);
+    parse_dwarf_info(dwarf2_per_objfile);
+    parse_dwarf_aranges(dwarf2_per_objfile);
 }
 
-int parse_load_command(char *macho_str, long *offset, struct load_command *lc){
-    //long offset = sizeof(struct load_command);
+int parse_load_command(char *macho_str, long *offset, struct load_command *lc, struct thin_macho*tm){
     switch (lc->cmd){
         case LC_UUID: 
             process_lc_uuid(macho_str, offset);
             break;
         case LC_SEGMENT: 
-            process_lc_segment(macho_str, offset);
+            process_lc_segment(macho_str, offset, tm);
             break;
         case LC_SEGMENT_64: 
-            process_lc_segment_64(macho_str, offset);
+            process_lc_segment_64(macho_str, offset, tm);
             break;
         case LC_SYMTAB:
             process_lc_symtab(macho_str, offset);
@@ -3548,6 +2846,16 @@ int parse_load_command(char *macho_str, long *offset, struct load_command *lc){
     }
 }
 
+void print_uuid(struct uuid_command *command){
+    int numofbytes = sizeof(command->uuid)/sizeof(*command->uuid);
+    printf("uuid: ");
+    int i = 0;
+    for (i = 0; i < numofbytes; i++){
+        printf("%02X", command->uuid[i]);
+    }
+    printf("\n");
+}
+
 int process_lc_data_in_code(char *macho_str, long *offset){
     struct lc_data_in_code command = {0};
     memcpy(&command, macho_str + *offset, sizeof(struct lc_data_in_code));
@@ -3563,24 +2871,14 @@ int process_lc_function_starts(char *macho_str, long *offset){
 }
 
 int process_lc_uuid(char *macho_str, long *offset){
-    //    printf("parsing LC_UUID\n");
     struct uuid_command command = {0};
     memcpy(&command, macho_str + *offset, sizeof(struct uuid_command));
-    *offset += sizeof(struct uuid_command);
-    int numofbytes = sizeof(command.uuid)/sizeof(*command.uuid);
-    //printf("numofbytes: %d\n", numofbytes);
-    printf("uuid: ");
-    int i = 0;
-    for (i = 0; i < numofbytes; i++){
-        printf("%02X", command.uuid[i]);
-    }
-    printf("\n");
-    //in case there are sections, we need to seek the file point to the next load command
-    *offset += command.cmdsize - sizeof(struct uuid_command); 
+    print_uuid(&command);
+    *offset += command.cmdsize;
     return 0; 
 }
 
-int process_lc_segment(char *macho_str, long *offset){
+int process_lc_segment(char *macho_str, long *offset, struct thin_macho*tm){
     struct segment_command command = {0};
 
     memcpy(&command, macho_str + *offset, sizeof(struct segment_command));
@@ -3589,12 +2887,30 @@ int process_lc_segment(char *macho_str, long *offset){
         doi.text_vmaddr = command.vmaddr;
     }
     if(strcmp(command.segname, "__DWARF") == 0){
-        parse_dwarf_segment(macho_str, *offset, &command);
-        return 0;
+        tm->dwarf2_per_objfile = parse_dwarf_segment(macho_str, *offset, &command);
     }
     //in case there are sections, we need to seek the file point to the next load command
     *offset += command.cmdsize - sizeof(struct segment_command); 
     return 0; 
+}
+
+int process_lc_segment_64(char *macho_str, long *offset, struct thin_macho*tm){
+    struct segment_command_64 command = {0};
+    memcpy(&command, macho_str + *offset, sizeof(struct segment_command_64));
+    *offset += sizeof(struct segment_command_64);
+    if(strcmp(command.segname, "__TEXT") == 0){
+        printf("__TEXT\n");
+        doi.text_vmaddr_64 = command.vmaddr;
+        printf("%llx\n", command.vmaddr);
+    }
+    if(strcmp(command.segname, "__DWARF") == 0){
+        printf("__DWARF\n");
+        tm->dwarf2_per_objfile = parse_dwarf_segment_64(macho_str, *offset, &command);
+        printf("end\n");
+    }
+    *offset += command.cmdsize - sizeof(struct segment_command_64); 
+
+    return 0;
 }
 
 int process_lc_sub_client(char *macho_str, long *offset){
@@ -3609,7 +2925,6 @@ int process_lc_sub_library(char *macho_str, long *offset){
     memcpy(&command, macho_str + *offset, sizeof(struct sub_library_command));
     *offset += command.cmdsize;
     return 0;
-
 }
 
 int process_lc_sub_umbrella(char *macho_str, long *offset){
@@ -3701,12 +3016,6 @@ int process_lc_dysymtab(char *macho_str, long *offset){
 int process_lc_symtab(char *macho_str, long *offset){
     struct symtab_command command = {0};
     memcpy(&command, macho_str + *offset, sizeof(struct symtab_command));
-    *offset += command.cmdsize;
-    return 0;
-}
-int process_lc_segment_64(char *macho_str, long *offset){
-    struct segment_command_64 command = {0};
-    memcpy(&command, macho_str + *offset, sizeof(struct segment_command_64));
     *offset += command.cmdsize;
     return 0;
 }

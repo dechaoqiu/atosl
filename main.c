@@ -21,7 +21,7 @@
 extern struct data_of_interest doi;
 char *project_name;
 
-void numeric_to_symbols(const char **addresses, int numofaddresses){
+void numeric_to_symbols(struct thin_macho *thin_macho, const char **addresses, int numofaddresses){
     char *address_info = NULL;
     int i = 0;
     const char *address = NULL;
@@ -37,7 +37,7 @@ void numeric_to_symbols(const char **addresses, int numofaddresses){
             //printf("0x%lx;\n", integer_address);
         }
 
-        lookup_by_address(integer_address);
+        lookup_by_address(thin_macho, integer_address);
         //printf("==============================\n");
     }
 }
@@ -51,12 +51,9 @@ int main(int argc, char *argv[]){
         printf("usage:  atos -o executable [address ...]");
         exit(1);
     }
-
     assert(strcmp(argv[1], "-o") == 0);
-    //char *full_filename = "./CrashTest3";
-    //char *full_filename = "./CrashTest2";
+
     char *full_filename = argv[2];
-    //printf("full_filename: %s\n", full_filename);
     char *filename = strrchr(full_filename, '/');
     if(filename == NULL){
         filename = full_filename;
@@ -69,16 +66,19 @@ int main(int argc, char *argv[]){
     //get address
     int numofaddresses = argc - 3;
     char **numeric_addresses = argv + 3;
-    int rc = 0;
-    rc = parse_file(full_filename);
-    if (rc == -1){
-        printf("parse file error.");
-        exit(-1);
+    struct target_file *tf = NULL;
+    tf = parse_file(full_filename);
+    //TODO
+    struct thin_macho *thin_macho = NULL;
+    if(tf->numofarchs == 1){
+        thin_macho = tf->thin_machos[0];
+    }else{
+        thin_macho = tf->thin_machos[1];
     }
-
-    parse_dwarf2_per_objfile();
-    numeric_to_symbols((const char **)numeric_addresses, numofaddresses);
-    //printf("vmaddr for text segment: 0x%x\n", doi.text_vmaddr);
-    free_dwarf2_per_objfile();
+    //print_all_dwarf2_per_objfile(thin_macho->dwarf2_per_objfile);
+    parse_dwarf2_per_objfile(thin_macho->dwarf2_per_objfile);
+    numeric_to_symbols(thin_macho, (const char **)numeric_addresses, numofaddresses);
+    printf("vmaddr for text segment: 0x%x\n", doi.text_vmaddr);
+    free_target_file(tf);
 }
 
