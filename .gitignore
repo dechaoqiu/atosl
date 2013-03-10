@@ -2,6 +2,7 @@
 *.o
 ctags
 CrashTest*
+TestMac1*
 atos
 debug_atos
 test.sh
