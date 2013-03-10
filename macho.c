@@ -343,7 +343,7 @@ static CORE_ADDR read_address_of_cu (char *buf, struct dwarf2_cu *cu, int *bytes
             retval = read_signed_64(buf);
             break;
         default:
-            printf("347read address: bad switch, signed\n");
+            printf("read address: bad switch, signed\n");
     }
     //}
     //else
@@ -1568,7 +1568,7 @@ int parse_universal(FILE *fp, uint32_t magic_number, struct target_file *tf){
         i++;
     }
     //TODO
-    parse_macho(tf->thin_machos[1]);
+    parse_macho(tf->thin_machos[0]);
     return 0;
 }
 
@@ -1832,7 +1832,7 @@ static CORE_ADDR read_address_of_arange (char *buf, struct arange *arange, int *
             retval = read_signed_64(buf);
             break;
         default:
-            printf("1836read address: bad switch, signed\n");
+            printf("read address: bad switch, signed\n");
     }
     *bytes_read = arange->aranges_header.addr_size;
     return retval;
@@ -2656,16 +2656,25 @@ unsigned int get_stmt_list_attribute(struct die_info *die, char *flag){
     return 0;
 }
 
-
+/* 
 void print_line_vector(struct subfile *subfile){
     struct linetable_entry *e;
     int i = 0;
     for(i = 0; i < subfile->line_vector->nitems; i ++){
         e = subfile->line_vector->item + i;
-        printf("address: 0x%08x line: %d\n", e->pc, e->line);
+        switch(sizeof(e->pc)){
+            case 4:
+                printf("address: 0x%08x line: %d\n", e->pc, e->line);
+                break;
+            case 8:
+                printf("address: 0x%016llx line: %d\n", e->pc, e->line);
+                break;
+            default:
+                printf("wrong address size\n");
+        }
     }
 }
-
+*/
 
 int get_lineno_for_address(struct subfile *subfile, CORE_ADDR address){
     struct linetable_entry *current_entry;
@@ -2697,7 +2706,7 @@ void print_thin_macho_aranges(struct thin_macho *thin_macho){
     }
 }
 
-void lookup_by_address(struct thin_macho *thin_macho, CORE_ADDR integer_address){
+int lookup_by_address(struct thin_macho *thin_macho, CORE_ADDR integer_address){
     CORE_ADDR address = (CORE_ADDR)integer_address;
     struct dwarf2_per_objfile* dwarf2_per_objfile = thin_macho->dwarf2_per_objfile;
     unsigned int num = dwarf2_per_objfile->n_aranges;
@@ -2707,11 +2716,10 @@ void lookup_by_address(struct thin_macho *thin_macho, CORE_ADDR integer_address)
     unsigned int i = 0, j = 0;
     for(i = 0; i< num; i++){
         struct arange *arange = all_aranges[i];
-        printf("address: 0x%016x\n", address);
         for(j = 0; j < arange->num_of_ards; j++){
             CORE_ADDR beginning_addr = arange->address_range_descriptors[j].beginning_addr;
             CORE_ADDR ending_addr = arange->address_range_descriptors[j].beginning_addr + arange->address_range_descriptors[j].length;
-            printf("0x%016llx + 0x%016llx = 0x%016llx\n", arange->address_range_descriptors[j].beginning_addr, arange->address_range_descriptors[j].length, arange->address_range_descriptors[j].beginning_addr + arange->address_range_descriptors[j].length);
+            //printf("0x%016llx + 0x%016llx = 0x%016llx\n", arange->address_range_descriptors[j].beginning_addr, arange->address_range_descriptors[j].length, arange->address_range_descriptors[j].beginning_addr + arange->address_range_descriptors[j].length);
             if (address >= beginning_addr && address < ending_addr){
                 target_arange = arange;
                 target_ard = &arange->address_range_descriptors[j];
@@ -2721,14 +2729,9 @@ void lookup_by_address(struct thin_macho *thin_macho, CORE_ADDR integer_address)
     }
     //struct arange *arange = target_arange;
     if(target_arange == NULL){
-        printf("target_arange is NULL\n\n");
-        return;
-        //TODO flag?
+        //printf("target_arange is NULL\n\n");
+        return -1;
     }
-    //printf("Address Range Header: length = 0x%08x  version = 0x%04x  cu_offset = 0x%08x  addr_size = 0x%02x  seg_size = 0x%02x\n", arange->aranges_header.length, arange->aranges_header.version, arange->aranges_header.info_offset, arange->aranges_header.addr_size, arange->aranges_header.seg_size);
-    //for (j = 0; j < arange->num_of_ards; j++){
-    //printf("0x%08x + 0x%08x = 0x%08x\n", arange->address_range_descriptors[j].beginning_addr, arange->address_range_descriptors[j].length, arange->address_range_descriptors[j].beginning_addr + arange->address_range_descriptors[j].length);
-    //}
 
     //find the target compilation unit 
     struct dwarf2_per_cu_data *target_dwarf2_per_cu_data= NULL;
@@ -2745,8 +2748,8 @@ void lookup_by_address(struct thin_macho *thin_macho, CORE_ADDR integer_address)
 
     struct die_info *target_die = find_target_subprogram(target_cu->dies, target_ard);
     if(target_die == NULL){
-        printf("Can not find target subprogram.\n");
-        return;
+        //printf("Can not find target subprogram.\n");
+        return -1;
     }
     char *target_program_full_name = get_name_attribute(target_cu->dies);
     char *target_program_name = strrchr(target_program_full_name, '/');
@@ -2774,6 +2777,7 @@ void lookup_by_address(struct thin_macho *thin_macho, CORE_ADDR integer_address)
     int lineno = get_lineno_for_address(current_subfile, address);
     //printf("lineno: %d\n",lineno);
     printf("%s (in %s) (%s:%d)\n", target_subprogram_name, project_name, target_program_name, lineno);
+    return 0;
 }
 
 int parse_dwarf2_per_objfile(struct dwarf2_per_objfile *dwarf2_per_objfile){
@@ -2880,7 +2884,7 @@ int process_lc_function_starts(char *macho_str, long *offset){
 int process_lc_uuid(char *macho_str, long *offset){
     struct uuid_command command = {0};
     memcpy(&command, macho_str + *offset, sizeof(struct uuid_command));
-    print_uuid(&command);
+    //print_uuid(&command);
     *offset += command.cmdsize;
     return 0; 
 }
@@ -2906,14 +2910,14 @@ int process_lc_segment_64(char *macho_str, long *offset, struct thin_macho*tm){
     memcpy(&command, macho_str + *offset, sizeof(struct segment_command_64));
     *offset += sizeof(struct segment_command_64);
     if(strcmp(command.segname, "__TEXT") == 0){
-        printf("__TEXT\n");
+        //printf("__TEXT\n");
         doi.text_vmaddr_64 = command.vmaddr;
-        printf("%llx\n", command.vmaddr);
+        //printf("%llx\n", command.vmaddr);
     }
     if(strcmp(command.segname, "__DWARF") == 0){
-        printf("__DWARF\n");
+        //printf("__DWARF\n");
         tm->dwarf2_per_objfile = parse_dwarf_segment_64(macho_str, *offset, &command);
-        printf("end\n");
+        //printf("end\n");
     }
     *offset += command.cmdsize - sizeof(struct segment_command_64); 
 

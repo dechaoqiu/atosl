@@ -26,25 +26,19 @@ void numeric_to_symbols(struct thin_macho *thin_macho, const char **addresses, i
     int i = 0;
     const char *address = NULL;
     CORE_ADDR integer_address = 0;
-    printf("sizeof long int: %d\n", sizeof(long int));
-    printf("sizeof int: %d\n", sizeof(int));
-    printf("sizeof long long: %d\n", sizeof(long long));
-    printf("sizeof uint64_t: %d\n", sizeof(uint64_t));
-    printf("sizeof CORE_ADDR: %d\n", sizeof(CORE_ADDR));
+
     for (i = 0; i < numofaddresses; i++){
         address = addresses[i];
-        printf("==============================\n");
         if(address[0] == '0' && (address[1] == 'x' || address[1] == 'X')){
             //address start with 0x
             integer_address = strtoll(address, NULL, 0);
-            printf("0x%llx;\n", integer_address);
         }else{
             integer_address= strtoll(address, NULL, 16);
-            printf("0x%llx;\n", integer_address);
         }
 
-        lookup_by_address(thin_macho, integer_address);
-        printf("==============================\n");
+        if (lookup_by_address(thin_macho, integer_address) != 0){
+            printf("%s\n", addresses[i]);
+        }
     }
 }
 
@@ -69,7 +63,6 @@ int main(int argc, char *argv[]){
     project_name = filename;
     //printf("Project Name: %s\n", project_name);
     
-    //get address
     int numofaddresses = argc - 3;
     char **numeric_addresses = argv + 3;
     struct target_file *tf = NULL;
@@ -79,7 +72,7 @@ int main(int argc, char *argv[]){
     if(tf->numofarchs == 1){
         thin_macho = tf->thin_machos[0];
     }else{
-        thin_macho = tf->thin_machos[1];
+        thin_macho = tf->thin_machos[0];
     }
     //print_all_dwarf2_per_objfile(thin_macho->dwarf2_per_objfile);
 
@@ -88,8 +81,8 @@ int main(int argc, char *argv[]){
     print_thin_macho_aranges(thin_macho);
     
     numeric_to_symbols(thin_macho, (const char **)numeric_addresses, numofaddresses);
-    printf("vmaddr for text segment: 0x%x\n", doi.text_vmaddr);
-    printf("vmaddr_64 for text segment: 0x%llx\n", doi.text_vmaddr_64);
+    //printf("vmaddr for text segment: 0x%x\n", doi.text_vmaddr);
+    //printf("vmaddr_64 for text segment: 0x%llx\n", doi.text_vmaddr_64);
     free_target_file(tf);
 }
 

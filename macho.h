@@ -512,6 +512,7 @@ struct target_file{
 };
 
 void free_target_file(struct target_file *tf);
+int lookup_by_address(struct thin_macho *thin_macho, CORE_ADDR integer_address);
 int parse_fat_arch(FILE *fp, struct fat_arch *fa, struct thin_macho**thin_macho, uint32_t magic_number);
 int parse_universal(FILE *fp, uint32_t magic_number, struct target_file *tf);
 int parse_normal(FILE *fp, uint32_t magic_number, struct target_file *tf);
