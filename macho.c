@@ -69,6 +69,7 @@ int64_t read_signed_64(unsigned char *info_ptr){
     ret = (ret << 8) + info_ptr[5];
     ret = (ret << 8) + info_ptr[4];
     ret = (ret << 8) + info_ptr[3];
+    ret = (ret << 8) + info_ptr[2];
     ret = (ret << 8) + info_ptr[1];
     ret = (ret << 8) + info_ptr[0];
     return ret;
@@ -2438,7 +2439,7 @@ void parse_dwarf_info(struct dwarf2_per_objfile *dwarf2_per_objfile){
 
 struct address_range_descriptor{
     CORE_ADDR beginning_addr;
-    unsigned int length;
+    uint64_t length;
 };
 
 unsigned int get_num_arange_descriptor(char *aranges_ptr, struct arange *arange){
@@ -2473,17 +2474,6 @@ unsigned int get_num_arange_descriptor(char *aranges_ptr, struct arange *arange)
         num_of_ards ++;
     }
     return num_of_ards;
-}
-
-void print_aranges(struct arange **all_aranges, unsigned int num){
-    unsigned int i = 0, j = 0;
-    for(i = 0; i< num; i++){
-        struct arange *arange = all_aranges[i];
-        printf("Address Range Header: length = 0x%08x  version = 0x%04x  cu_offset = 0x%08x  addr_size = 0x%02x  seg_size = 0x%02x\n", arange->aranges_header.length, arange->aranges_header.version, arange->aranges_header.info_offset, arange->aranges_header.addr_size, arange->aranges_header.seg_size);
-        for (j = 0; j < arange->num_of_ards; j++){
-            printf("0x%08x + 0x%08x = 0x%08x\n", arange->address_range_descriptors[j].beginning_addr, arange->address_range_descriptors[j].length, arange->address_range_descriptors[j].beginning_addr + arange->address_range_descriptors[j].length);
-        }
-    }
 }
 
 static void parse_dwarf_aranges(struct dwarf2_per_objfile *dwarf2_per_objfile)
@@ -2691,7 +2681,23 @@ int get_lineno_for_address(struct subfile *subfile, CORE_ADDR address){
     return 0;
 }
 
-void lookup_by_address(struct thin_macho *thin_macho, long int integer_address){
+void print_thin_macho_aranges(struct thin_macho *thin_macho){
+    struct dwarf2_per_objfile* dwarf2_per_objfile = thin_macho->dwarf2_per_objfile;
+    unsigned int num = dwarf2_per_objfile->n_aranges;
+    struct arange **all_aranges = dwarf2_per_objfile->all_aranges; 
+    struct address_range_descriptor *target_ard;
+
+    unsigned int i = 0, j = 0;
+    for(i = 0; i< num; i++){
+        struct arange *arange = all_aranges[i];
+        printf("Address Range Header: length = 0x%08x  version = 0x%04x  cu_offset = 0x%08x  addr_size = 0x%02x  seg_size = 0x%02x\n", arange->aranges_header.length, arange->aranges_header.version, arange->aranges_header.info_offset, arange->aranges_header.addr_size, arange->aranges_header.seg_size);
+        for (j = 0; j < arange->num_of_ards; j++){
+            printf("0x%016llx + 0x%016llx = 0x%016llx\n", arange->address_range_descriptors[j].beginning_addr, arange->address_range_descriptors[j].length, arange->address_range_descriptors[j].beginning_addr + arange->address_range_descriptors[j].length);
+        }
+    }
+}
+
+void lookup_by_address(struct thin_macho *thin_macho, CORE_ADDR integer_address){
     CORE_ADDR address = (CORE_ADDR)integer_address;
     struct dwarf2_per_objfile* dwarf2_per_objfile = thin_macho->dwarf2_per_objfile;
     unsigned int num = dwarf2_per_objfile->n_aranges;
@@ -2701,10 +2707,11 @@ void lookup_by_address(struct thin_macho *thin_macho, long int integer_address){
     unsigned int i = 0, j = 0;
     for(i = 0; i< num; i++){
         struct arange *arange = all_aranges[i];
-        //printf("0x%08x + 0x%08x = 0x%08x\n", arange->address_range_descriptors[j].beginning_addr, arange->address_range_descriptors[j].length, arange->address_range_descriptors[j].beginning_addr + arange->address_range_descriptors[j].length);
+        printf("address: 0x%016x\n", address);
         for(j = 0; j < arange->num_of_ards; j++){
             CORE_ADDR beginning_addr = arange->address_range_descriptors[j].beginning_addr;
             CORE_ADDR ending_addr = arange->address_range_descriptors[j].beginning_addr + arange->address_range_descriptors[j].length;
+            printf("0x%016llx + 0x%016llx = 0x%016llx\n", arange->address_range_descriptors[j].beginning_addr, arange->address_range_descriptors[j].length, arange->address_range_descriptors[j].beginning_addr + arange->address_range_descriptors[j].length);
             if (address >= beginning_addr && address < ending_addr){
                 target_arange = arange;
                 target_ard = &arange->address_range_descriptors[j];

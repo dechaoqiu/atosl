@@ -25,20 +25,26 @@ void numeric_to_symbols(struct thin_macho *thin_macho, const char **addresses, i
     char *address_info = NULL;
     int i = 0;
     const char *address = NULL;
-    long int integer_address = 0;
+    CORE_ADDR integer_address = 0;
+    printf("sizeof long int: %d\n", sizeof(long int));
+    printf("sizeof int: %d\n", sizeof(int));
+    printf("sizeof long long: %d\n", sizeof(long long));
+    printf("sizeof uint64_t: %d\n", sizeof(uint64_t));
+    printf("sizeof CORE_ADDR: %d\n", sizeof(CORE_ADDR));
     for (i = 0; i < numofaddresses; i++){
         address = addresses[i];
+        printf("==============================\n");
         if(address[0] == '0' && (address[1] == 'x' || address[1] == 'X')){
             //address start with 0x
-            integer_address = strtol(address, NULL, 0);
-            //printf("0x%lx;\n", integer_address);
+            integer_address = strtoll(address, NULL, 0);
+            printf("0x%llx;\n", integer_address);
         }else{
-            integer_address= strtol(address, NULL, 16);
-            //printf("0x%lx;\n", integer_address);
+            integer_address= strtoll(address, NULL, 16);
+            printf("0x%llx;\n", integer_address);
         }
 
         lookup_by_address(thin_macho, integer_address);
-        //printf("==============================\n");
+        printf("==============================\n");
     }
 }
 
@@ -76,9 +82,14 @@ int main(int argc, char *argv[]){
         thin_macho = tf->thin_machos[1];
     }
     //print_all_dwarf2_per_objfile(thin_macho->dwarf2_per_objfile);
+
     parse_dwarf2_per_objfile(thin_macho->dwarf2_per_objfile);
+    
+    print_thin_macho_aranges(thin_macho);
+    
     numeric_to_symbols(thin_macho, (const char **)numeric_addresses, numofaddresses);
     printf("vmaddr for text segment: 0x%x\n", doi.text_vmaddr);
+    printf("vmaddr_64 for text segment: 0x%llx\n", doi.text_vmaddr_64);
     free_target_file(tf);
 }
 

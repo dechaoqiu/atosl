@@ -15,7 +15,8 @@
 #endif
 #define INITIAL_LINE_VECTOR_LENGTH  1000
 
-typedef unsigned int CORE_ADDR;
+//typedef unsigned int CORE_ADDR;
+typedef uint64_t CORE_ADDR;
 
 struct lc_function_starts
 {
@@ -35,7 +36,7 @@ struct lc_data_in_code
 
 struct data_of_interest{
     uint32_t text_vmaddr;
-    uint32_t text_vmaddr_64;
+    uint64_t text_vmaddr_64;
 };
 
 
