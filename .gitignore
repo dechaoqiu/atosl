@@ -1,12 +1,11 @@
 # Object files
 *.o
 ctags
-CrashTest*
-TestMac1*
+#CrashTest*
 atos
 debug_atos
-test.sh
-TestMac*
+#test.sh
+#TestMac*
 core
 # tags
 
