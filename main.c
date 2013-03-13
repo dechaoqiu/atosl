@@ -78,7 +78,7 @@ int main(int argc, char *argv[]){
 
     parse_dwarf2_per_objfile(thin_macho->dwarf2_per_objfile);
     
-    print_thin_macho_aranges(thin_macho);
+    //print_thin_macho_aranges(thin_macho);
     
     numeric_to_symbols(thin_macho, (const char **)numeric_addresses, numofaddresses);
     //printf("vmaddr for text segment: 0x%x\n", doi.text_vmaddr);

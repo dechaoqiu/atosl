@@ -1,8 +1,8 @@
 /* Languages represented in the symbol table and elsewhere.
- */
+*/
 
 enum language
-  {
+{
     language_unknown,		/* Language not known */
     language_auto,		/* Placeholder for automatic setting */
     language_c,			/* C */
@@ -19,5 +19,5 @@ enum language
     language_ada,		/* Ada */
     language_minimal,		/* All other languages, minimal support only */
     nr_languages
-  };
+};
 

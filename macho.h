@@ -87,27 +87,9 @@ struct comp_unit_head
 
 struct dwarf2_per_cu_data
 {
-    /* The start offset and length of this compilation unit.  2**31-1
-       bytes should suffice to store the length of any compilation unit
-       - if it doesn't, GDB will fall over anyway.  */
     unsigned long offset;
-    unsigned long length : 31;
-
-    /* Flag indicating this compilation unit will be read in before
-       any of the current compilation units are processed.  */
-    //unsigned long queued : 1;
-
-    /* Set iff currently read in.  */
+    unsigned long length;
     struct dwarf2_cu *cu;
-
-    /* If full symbols for this CU have been read in, then this field
-       holds a map of DIE offsets to types.  It isn't always possible
-       to reconstruct this information later, so we have to preserve
-       it.  */
-    //htab_t type_hash;
-
-    ///* The partial symbol table associated with this compilation unit.  */
-    //struct partial_symtab *psymtab;
 };
 
 
@@ -197,7 +179,6 @@ struct dwarf2_per_objfile
 
     /* A chain of compilation units that are currently read in, so that
        they can be freed later.  */
-    struct dwarf2_per_cu_data *read_in_chain;
     struct abbrev_info **dwarf2_abbrevs;
 };
 
@@ -268,8 +249,6 @@ struct dwarf2_cu
        FIXME drow/2003-11-10: Some of the things from the comp_unit_head
        should logically be moved to the dwarf2_cu structure.  */
     struct comp_unit_head header;
-    //TODO
-    //struct function_range *first_fn, *last_fn, *cached_fn;
 
     /* The language we are debugging.  */
     enum language language;
@@ -309,8 +288,6 @@ distinguish these in buildsym.c.  */
     struct abbrev_info **dwarf2_abbrevs;
 
     /* Storage for the abbrev table.  */
-    //TODO
-    //struct obstack abbrev_obstack;
 
     /* Hash table holding all the loaded partial DIEs.  */
     //htab_t partial_dies;
@@ -323,7 +300,6 @@ distinguish these in buildsym.c.  */
        chains them all together, so that they can be released efficiently.
        We will probably also want a generation counter so that most-recently-used
        compilation units are cached...  */
-    //struct dwarf2_per_cu_data *read_in_chain;
 
     /* Backchain to our per_cu entry if the tree has been built.  */
     struct dwarf2_per_cu_data *per_cu;
@@ -485,20 +461,6 @@ struct subfile
     enum language language;
     //char *debugformat;
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 struct thin_macho{
     char *data;

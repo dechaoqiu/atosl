@@ -44,92 +44,92 @@
 /* Structure found in the .debug_line section.  */
 typedef struct
 {
-  unsigned char li_length          [4];
-  unsigned char li_version         [2];
-  unsigned char li_prologue_length [4];
-  unsigned char li_min_insn_length [1];
-  unsigned char li_default_is_stmt [1];
-  unsigned char li_line_base       [1];
-  unsigned char li_line_range      [1];
-  unsigned char li_opcode_base     [1];
+    unsigned char li_length          [4];
+    unsigned char li_version         [2];
+    unsigned char li_prologue_length [4];
+    unsigned char li_min_insn_length [1];
+    unsigned char li_default_is_stmt [1];
+    unsigned char li_line_base       [1];
+    unsigned char li_line_range      [1];
+    unsigned char li_opcode_base     [1];
 }
 DWARF2_External_LineInfo;
 
 typedef struct
 {
-  unsigned long  li_length;
-  unsigned short li_version;
-  unsigned int   li_prologue_length;
-  unsigned char  li_min_insn_length;
-  unsigned char  li_default_is_stmt;
-  int            li_line_base;
-  unsigned char  li_line_range;
-  unsigned char  li_opcode_base;
+    unsigned long  li_length;
+    unsigned short li_version;
+    unsigned int   li_prologue_length;
+    unsigned char  li_min_insn_length;
+    unsigned char  li_default_is_stmt;
+    int            li_line_base;
+    unsigned char  li_line_range;
+    unsigned char  li_opcode_base;
 }
 DWARF2_Internal_LineInfo;
 
 /* Structure found in .debug_pubnames section.  */
 typedef struct
 {
-  unsigned char pn_length  [4];
-  unsigned char pn_version [2];
-  unsigned char pn_offset  [4];
-  unsigned char pn_size    [4];
+    unsigned char pn_length  [4];
+    unsigned char pn_version [2];
+    unsigned char pn_offset  [4];
+    unsigned char pn_size    [4];
 }
 DWARF2_External_PubNames;
 
 typedef struct
 {
-  unsigned long  pn_length;
-  unsigned short pn_version;
-  unsigned long  pn_offset;
-  unsigned long  pn_size;
+    unsigned long  pn_length;
+    unsigned short pn_version;
+    unsigned long  pn_offset;
+    unsigned long  pn_size;
 }
 DWARF2_Internal_PubNames;
 
 /* Structure found in .debug_info section.  */
 typedef struct
 {
-  unsigned char  cu_length        [4];
-  unsigned char  cu_version       [2];
-  unsigned char  cu_abbrev_offset [4];
-  unsigned char  cu_pointer_size  [1];
+    unsigned char  cu_length        [4];
+    unsigned char  cu_version       [2];
+    unsigned char  cu_abbrev_offset [4];
+    unsigned char  cu_pointer_size  [1];
 }
 DWARF2_External_CompUnit;
 
 typedef struct
 {
-  unsigned long  cu_length;
-  unsigned short cu_version;
-  unsigned long  cu_abbrev_offset;
-  unsigned char  cu_pointer_size;
+    unsigned long  cu_length;
+    unsigned short cu_version;
+    unsigned long  cu_abbrev_offset;
+    unsigned char  cu_pointer_size;
 }
 DWARF2_Internal_CompUnit;
 
 typedef struct
 {
-  unsigned char  ar_length       [4];
-  unsigned char  ar_version      [2];
-  unsigned char  ar_info_offset  [4];
-  unsigned char  ar_pointer_size [1];
-  unsigned char  ar_segment_size [1];
+    unsigned char  ar_length       [4];
+    unsigned char  ar_version      [2];
+    unsigned char  ar_info_offset  [4];
+    unsigned char  ar_pointer_size [1];
+    unsigned char  ar_segment_size [1];
 }
 DWARF2_External_ARange;
 
 typedef struct
 {
-  unsigned long  ar_length;
-  unsigned short ar_version;
-  unsigned long  ar_info_offset;
-  unsigned char  ar_pointer_size;
-  unsigned char  ar_segment_size;
+    unsigned long  ar_length;
+    unsigned short ar_version;
+    unsigned long  ar_info_offset;
+    unsigned char  ar_pointer_size;
+    unsigned char  ar_segment_size;
 }
 DWARF2_Internal_ARange;
 
 
 /* Tag names and codes.  */
 enum dwarf_tag
-  {
+{
     DW_TAG_padding = 0x00,
     DW_TAG_array_type = 0x01,
     DW_TAG_class_type = 0x02,
@@ -206,7 +206,7 @@ enum dwarf_tag
     /* PGI (STMicroelectronics) extensions.  No documentation available.  */
     DW_TAG_PGI_kanji_type      = 0xA000,
     DW_TAG_PGI_interface_block = 0xA020
-  };
+};
 
 #define DW_TAG_lo_user	0x4080
 #define DW_TAG_hi_user	0xffff
@@ -217,7 +217,7 @@ enum dwarf_tag
 
 /* Form names and codes.  */
 enum dwarf_form
-  {
+{
     DW_FORM_addr = 0x01,
     DW_FORM_block2 = 0x03,
     DW_FORM_block4 = 0x04,
@@ -240,11 +240,11 @@ enum dwarf_form
     DW_FORM_ref_udata = 0x15,
     DW_FORM_indirect = 0x16,
     DW_FORM_APPLE_db_str = 0x50
-  };
+};
 
 /* Attribute names and codes.  */
 enum dwarf_attribute
-  {
+{
     DW_AT_sibling = 0x01,
     DW_AT_location = 0x02,
     DW_AT_name = 0x03,
@@ -385,14 +385,14 @@ enum dwarf_attribute
     DW_AT_PGI_lbase    = 0x3a00,
     DW_AT_PGI_soffset  = 0x3a01,
     DW_AT_PGI_lstride  = 0x3a02
-  };
+};
 
 #define DW_AT_lo_user	0x2000	/* Implementation-defined range start.  */
 #define DW_AT_hi_user	0x3ff0	/* Implementation-defined range end.  */
 
 /* Location atom names and codes.  */
 enum dwarf_location_atom
-  {
+{
     DW_OP_addr = 0x03,
     DW_OP_deref = 0x06,
     DW_OP_const1u = 0x08,
@@ -556,14 +556,14 @@ enum dwarf_location_atom
     DW_OP_HP_mod_range   = 0xe4,
     DW_OP_HP_unmod_range = 0xe5,
     DW_OP_HP_tls         = 0xe6
-  };
+};
 
 #define DW_OP_lo_user	0xe0	/* Implementation-defined range start.  */
 #define DW_OP_hi_user	0xff	/* Implementation-defined range end.  */
 
 /* Type encodings.  */
 enum dwarf_type
-  {
+{
     DW_ATE_void = 0x0,
     DW_ATE_address = 0x1,
     DW_ATE_boolean = 0x2,
@@ -589,105 +589,105 @@ enum dwarf_type
     DW_ATE_HP_floathpintel       = 0x84, /* Floating-point (82 bit IA64).  */
     DW_ATE_HP_imaginary_float80  = 0x85,
     DW_ATE_HP_imaginary_float128 = 0x86
-  };
+};
 
 #define	DW_ATE_lo_user 0x80
 #define	DW_ATE_hi_user 0xff
 
 /* Decimal sign encodings.  */
 enum dwarf_decimal_sign_encoding
-  {
+{
     /* DWARF 3.  */
     DW_DS_unsigned = 0x01,
     DW_DS_leading_overpunch = 0x02,
     DW_DS_trailing_overpunch = 0x03,
     DW_DS_leading_separate = 0x04,
     DW_DS_trailing_separate = 0x05
-  };
+};
 
 /* Endianity encodings.  */
 enum dwarf_endianity_encoding
-  {
+{
     /* DWARF 3.  */
     DW_END_default = 0x00,
     DW_END_big = 0x01,
     DW_END_little = 0x02
-  };
+};
 
 #define DW_END_lo_user 0x40
 #define DW_END_hi_user 0xff
 
 /* Array ordering names and codes.  */
 enum dwarf_array_dim_ordering
-  {
+{
     DW_ORD_row_major = 0,
     DW_ORD_col_major = 1
-  };
+};
 
 /* Access attribute.  */
 enum dwarf_access_attribute
-  {
+{
     DW_ACCESS_public = 1,
     DW_ACCESS_protected = 2,
     DW_ACCESS_private = 3
-  };
+};
 
 /* Visibility.  */
 enum dwarf_visibility_attribute
-  {
+{
     DW_VIS_local = 1,
     DW_VIS_exported = 2,
     DW_VIS_qualified = 3
-  };
+};
 
 /* Virtuality.  */
 enum dwarf_virtuality_attribute
-  {
+{
     DW_VIRTUALITY_none = 0,
     DW_VIRTUALITY_virtual = 1,
     DW_VIRTUALITY_pure_virtual = 2
-  };
+};
 
 /* Case sensitivity.  */
 enum dwarf_id_case
-  {
+{
     DW_ID_case_sensitive = 0,
     DW_ID_up_case = 1,
     DW_ID_down_case = 2,
     DW_ID_case_insensitive = 3
-  };
+};
 
 /* Calling convention.  */
 enum dwarf_calling_convention
-  {
+{
     DW_CC_normal = 0x1,
     DW_CC_program = 0x2,
     DW_CC_nocall = 0x3,
     DW_CC_GNU_renesas_sh = 0x40
-  };
+};
 
 #define DW_CC_lo_user 0x40
 #define DW_CC_hi_user 0xff
 
 /* Inline attribute.  */
 enum dwarf_inline_attribute
-  {
+{
     DW_INL_not_inlined = 0,
     DW_INL_inlined = 1,
     DW_INL_declared_not_inlined = 2,
     DW_INL_declared_inlined = 3
-  };
+};
 
 /* Discriminant lists.  */
 enum dwarf_discrim_list
-  {
+{
     DW_DSC_label = 0,
     DW_DSC_range = 1
-  };
+};
 
 /* Line number opcodes.  */
 enum dwarf_line_number_ops
-  {
+{
     DW_LNS_extended_op = 0,
     DW_LNS_copy = 1,
     DW_LNS_advance_pc = 2,
@@ -702,11 +702,11 @@ enum dwarf_line_number_ops
     DW_LNS_set_prologue_end = 10,
     DW_LNS_set_epilogue_begin = 11,
     DW_LNS_set_isa = 12
-  };
+};
 
 /* Line number extended opcodes.  */
 enum dwarf_line_number_x_ops
-  {
+{
     DW_LNE_end_sequence = 1,
     DW_LNE_set_address = 2,
     DW_LNE_define_file = 3,
@@ -721,14 +721,14 @@ enum dwarf_line_number_x_ops
     DW_LNE_HP_negate_function_exit     = 0x18,
     DW_LNE_HP_negate_front_end_logical = 0x19,
     DW_LNE_HP_define_proc              = 0x20
-  };
+};
 
 #define DW_LNE_lo_user 0x80
 #define DW_LNE_hi_user 0xff
 
 /* Call frame information.  */
 enum dwarf_call_frame_info
-  {
+{
     DW_CFA_advance_loc = 0x40,
     DW_CFA_offset = 0x80,
     DW_CFA_restore = 0xc0,
@@ -762,7 +762,7 @@ enum dwarf_call_frame_info
     DW_CFA_GNU_window_save = 0x2d,
     DW_CFA_GNU_args_size = 0x2e,
     DW_CFA_GNU_negative_offset_extended = 0x2f
-  };
+};
 
 #define DW_CIE_ID	  0xffffffff
 #define DW_CIE_VERSION	  1
@@ -778,7 +778,7 @@ enum dwarf_call_frame_info
 
 /* Source language names and codes.  */
 enum dwarf_source_language
-  {
+{
     DW_LANG_C89 = 0x0001,
     DW_LANG_C = 0x0002,
     DW_LANG_Ada83 = 0x0003,
@@ -803,20 +803,20 @@ enum dwarf_source_language
     DW_LANG_Mips_Assembler = 0x8001,
     /* UPC.  */
     DW_LANG_Upc = 0x8765
-  };
+};
 
 #define DW_LANG_lo_user 0x8000	/* Implementation-defined range start.  */
 #define DW_LANG_hi_user 0xffff	/* Implementation-defined range start.  */
 
 /* Names and codes for macro information.  */
 enum dwarf_macinfo_record_type
-  {
+{
     DW_MACINFO_define = 1,
     DW_MACINFO_undef = 2,
     DW_MACINFO_start_file = 3,
     DW_MACINFO_end_file = 4,
     DW_MACINFO_vendor_ext = 255
-  };
+};
 
 /* @@@ For use with GNU frame unwind information.  */
 
