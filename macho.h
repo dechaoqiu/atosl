@@ -7,6 +7,7 @@
 #include "fat.h"
 #include "language.h"
 #include "dwarf2.h"
+#include "cputype.h"
 #include "converter.h"
 
 /* We hold several abbreviation tables in memory at the same time. */
@@ -15,8 +16,9 @@
 #endif
 #define INITIAL_LINE_VECTOR_LENGTH  1000
 
-//typedef unsigned int CORE_ADDR;
-typedef uint64_t CORE_ADDR;
+typedef unsigned int CORE_ADDR;
+//typedef uint64_t CORE_ADDR;
+//2278 length nedd to be change for 64bits
 
 struct lc_function_starts
 {
@@ -465,6 +467,8 @@ struct subfile
 struct thin_macho{
     char *data;
     long int size;
+    cpu_type_t	cputype;	/* cpu specifier */
+    cpu_subtype_t	cpusubtype;	/* machine specifier */
     struct dwarf2_per_objfile* dwarf2_per_objfile;
 };
 
@@ -472,7 +476,7 @@ struct target_file{
     struct thin_macho** thin_machos;
     uint32_t numofarchs;
 };
-
+int select_thin_macho_by_arch(struct target_file *tf, const char *arch);
 void free_target_file(struct target_file *tf);
 int lookup_by_address(struct thin_macho *thin_macho, CORE_ADDR integer_address);
 int parse_fat_arch(FILE *fp, struct fat_arch *fa, struct thin_macho**thin_macho, uint32_t magic_number);

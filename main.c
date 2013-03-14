@@ -43,17 +43,21 @@ void numeric_to_symbols(struct thin_macho *thin_macho, const char **addresses, i
 }
 
 int main(int argc, char *argv[]){
-    if (argc < 4){
+    if (argc < 6){
         //TODO Arch
         //printf("usage:  atos [-p pid] [-o executable] [-f file] [-s slide | -l loadAddress] [-arch architecture] [-printHeader] [address ...]");
         //printf("usage:  atos [-o executable] [-arch architecture] [address ...]");
         printf("argc: %d\t\n", argc);
-        printf("usage:  atos -o executable [address ...]");
+        printf("usage:  atos -arch architecture -o executable [address ...]");
         exit(1);
     }
-    assert(strcmp(argv[1], "-o") == 0);
+    assert(strcmp(argv[1], "-arch") == 0);
 
-    char *full_filename = argv[2];
+    char *arch = argv[2];
+
+    assert(strcmp(argv[3], "-o") == 0);
+
+    char *full_filename = argv[4];
     char *filename = strrchr(full_filename, '/');
     if(filename == NULL){
         filename = full_filename;
@@ -63,17 +67,19 @@ int main(int argc, char *argv[]){
     project_name = filename;
     //printf("Project Name: %s\n", project_name);
     
-    int numofaddresses = argc - 3;
-    char **numeric_addresses = argv + 3;
+    int numofaddresses = argc - 5;
+    char **numeric_addresses = argv + 5;
     struct target_file *tf = NULL;
     tf = parse_file(full_filename);
-    //TODO
+
     struct thin_macho *thin_macho = NULL;
-    if(tf->numofarchs == 1){
-        thin_macho = tf->thin_machos[0];
-    }else{
-        thin_macho = tf->thin_machos[0];
+    //select thin_macho according to the arch
+    //performance
+    int i = select_thin_macho_by_arch(tf, arch);
+    if(i == -1){
+        printf("atos: Unknown architecture: %s\n", arch);
     }
+    thin_macho = tf->thin_machos[i];
     //print_all_dwarf2_per_objfile(thin_macho->dwarf2_per_objfile);
 
     parse_dwarf2_per_objfile(thin_macho->dwarf2_per_objfile);

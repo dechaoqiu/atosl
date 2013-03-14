@@ -1311,6 +1311,9 @@ void free_buffers(struct dwarf2_per_objfile *dwarf2_per_objfile){
 }
 
 void free_dwarf_abbrev_hash(struct dwarf2_per_objfile *dwarf2_per_objfile){
+    if(dwarf2_per_objfile->dwarf2_abbrevs == NULL){
+        return;
+    }
     int i = 0;
     while(i < ABBREV_HASH_SIZE){
         struct abbrev_info *dwarf2_abbrevs= dwarf2_per_objfile->dwarf2_abbrevs[i];
@@ -1384,21 +1387,83 @@ void free_target_file(struct target_file *tf){
         free(tf->thin_machos[i]->data);
         if(tf->thin_machos[i]->dwarf2_per_objfile){
             struct dwarf2_per_objfile *dwarf2_per_objfile = tf->thin_machos[i]->dwarf2_per_objfile;
-            free_buffers(dwarf2_per_objfile);
-            //free all compilation units
-            free_compilation_units(dwarf2_per_objfile);
-            //free aranges
-            free_dwarf_aranges(dwarf2_per_objfile);
-            //free dwarf abbrev hash
-            free_dwarf_abbrev_hash(dwarf2_per_objfile);
-            //free dwarf file
-            free(dwarf2_per_objfile);
+            if (dwarf2_per_objfile != NULL){
+                free_buffers(dwarf2_per_objfile);
+                //free all compilation units
+                free_compilation_units(dwarf2_per_objfile);
+                //free aranges
+                free_dwarf_aranges(dwarf2_per_objfile);
+                //free dwarf abbrev hash
+                free_dwarf_abbrev_hash(dwarf2_per_objfile);
+                //free dwarf file
+                free(dwarf2_per_objfile);
+            }
         }
         free(tf->thin_machos[i]);
         i++;
     }
     free(tf->thin_machos);
     free(tf);
+}
+
+int select_thin_macho_by_arch(struct target_file *tf, const char *target_arch){
+    int i = 0;
+    char *arch = "other";
+    while(i < tf->numofarchs){
+        struct thin_macho *thin_macho = tf->thin_machos[i];
+        switch(thin_macho->cputype){
+           case CPU_TYPE_ARM:
+               {
+                   switch (thin_macho->cpusubtype){
+                        case CPU_SUBTYPE_ARM_V4T:
+                            //armv4t
+                            arch = "armv4t";
+                            break;
+                        case CPU_SUBTYPE_ARM_V5TEJ:
+                            //armv5
+                            arch = "armv5";
+                            break;
+                        case CPU_SUBTYPE_ARM_V6:
+                            //armv6
+                            arch = "armv6";
+                            break;
+                        case CPU_SUBTYPE_ARM_V7:
+                            //armv7
+                            arch = "armv7";
+                            break;
+                        case CPU_SUBTYPE_ARM_V7S:
+                            //armv7s
+                            arch = "armv7s";
+                            break;
+                   }
+                   break;
+               }
+           case CPU_TYPE_I386:
+               //i386
+               arch = "i386";
+               break;
+            case CPU_TYPE_X86_64:
+               //x86_64
+               arch = "x86_64";
+               break;
+            case CPU_TYPE_POWERPC:
+               //ppc
+               arch = "ppc";
+               break;
+            case CPU_TYPE_POWERPC64:
+               //ppc64
+               arch = "ppc64";
+               break;
+        }
+        if (strcmp(arch, target_arch) == 0){
+            return i;
+        }
+        i++;
+    }
+    if (strcmp(arch, "other") == 0){
+        printf("unknow arch: %s\n", target_arch);
+    }
+    return -1;
 }
 
 struct target_file *parse_file(const char *filename){
@@ -1559,10 +1624,10 @@ int parse_universal(FILE *fp, uint32_t magic_number, struct target_file *tf){
         }else{
             printf("read fat arch error\n");
         }
+        //FIXME
+        parse_macho(tf->thin_machos[i]);
         i++;
     }
-    //FIXME
-    parse_macho(tf->thin_machos[0]);
     return 0;
 }
 
@@ -1586,6 +1651,8 @@ int parse_macho(struct thin_macho*tm){
                 header_size = sizeof(struct mach_header);
                 memcpy(&mh, macho_str + offset, header_size); 
                 num_load_cmds = mh.ncmds;
+                tm->cputype = mh.cputype;
+                tm->cpusubtype = mh.cpusubtype;
                 break;
             }
         case MH_MAGIC_64:
@@ -1597,6 +1664,8 @@ int parse_macho(struct thin_macho*tm){
                 header_size = sizeof(struct mach_header_64);
                 memcpy(&mh64, macho_str + offset, header_size); 
                 num_load_cmds = mh64.ncmds;
+                tm->cputype = mh64.cputype;
+                tm->cpusubtype = mh64.cpusubtype;
                 break;
             }
         case MH_CIGAM:
@@ -2285,7 +2354,8 @@ void parse_dwarf_info(struct dwarf2_per_objfile *dwarf2_per_objfile){
 
 struct address_range_descriptor{
     CORE_ADDR beginning_addr;
-    uint64_t length;
+    //uint64_t length;
+    unsigned int length;
 };
 
 unsigned int get_num_arange_descriptor(char *aranges_ptr, struct arange *arange){
@@ -2552,7 +2622,8 @@ void print_thin_macho_aranges(struct thin_macho *thin_macho){
         struct arange *arange = all_aranges[i];
         printf("Address Range Header: length = 0x%08x  version = 0x%04x  cu_offset = 0x%08x  addr_size = 0x%02x  seg_size = 0x%02x\n", arange->aranges_header.length, arange->aranges_header.version, arange->aranges_header.info_offset, arange->aranges_header.addr_size, arange->aranges_header.seg_size);
         for (j = 0; j < arange->num_of_ards; j++){
-            printf("0x%016llx + 0x%016llx = 0x%016llx\n", arange->address_range_descriptors[j].beginning_addr, arange->address_range_descriptors[j].length, arange->address_range_descriptors[j].beginning_addr + arange->address_range_descriptors[j].length);
+            //printf("0x%016llx + 0x%016llx = 0x%016llx\n", arange->address_range_descriptors[j].beginning_addr, arange->address_range_descriptors[j].length, arange->address_range_descriptors[j].beginning_addr + arange->address_range_descriptors[j].length);
+            printf("0x%08x + 0x%08x = 0x%08x\n", arange->address_range_descriptors[j].beginning_addr, arange->address_range_descriptors[j].length, arange->address_range_descriptors[j].beginning_addr + arange->address_range_descriptors[j].length);
         }
     }
 }
