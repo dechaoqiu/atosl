@@ -38,3 +38,6 @@ release: $(OBJECTS)
 clean:
 	rm -rf $(EXECUTABLE) $(DEBUG) *.o
 
+install:
+	cp atos /usr/local/bin/atos
+
