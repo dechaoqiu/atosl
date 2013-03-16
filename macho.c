@@ -2517,11 +2517,11 @@ int is_target_subprogram(struct die_info *die, struct address_range_descriptor *
     int flag = 0;
     unsigned int i = 0;
     for(i = 0; i< die->num_attrs; i++){
-        if(die->attrs[i].name == DW_AT_low_pc && die->attrs[i].u.addr == target_ard->beginning_addr){
+        if(die->attrs[i].name == DW_AT_low_pc && die->attrs[i].u.addr >= target_ard->beginning_addr){
             flag++;
         }
 
-        if(die->attrs[i].name == DW_AT_high_pc && die->attrs[i].u.addr == (target_ard->beginning_addr + target_ard->length)){
+        if(die->attrs[i].name == DW_AT_high_pc && die->attrs[i].u.addr <= (target_ard->beginning_addr + target_ard->length)){
             flag++;
         }
 
