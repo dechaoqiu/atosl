@@ -2513,17 +2513,26 @@ static void parse_dwarf_aranges(struct dwarf2_per_objfile *dwarf2_per_objfile)
     dwarf2_per_objfile->n_aranges = n_aranges;
 }
 
-int is_target_subprogram(struct die_info *die, struct address_range_descriptor *target_ard){
+int is_target_subprogram(struct die_info *die, struct address_range_descriptor *target_ard, CORE_ADDR integer_address){
+    //FIXME May not need target_ard
     int flag = 0;
     unsigned int i = 0;
     for(i = 0; i< die->num_attrs; i++){
-        if(die->attrs[i].name == DW_AT_low_pc && die->attrs[i].u.addr >= target_ard->beginning_addr){
+        //if(die->attrs[i].name == DW_AT_low_pc && die->attrs[i].u.addr >= target_ard->beginning_addr && integer_address ){
+        //    flag++;
+        //}
+
+        //if(die->attrs[i].name == DW_AT_high_pc && die->attrs[i].u.addr <= (target_ard->beginning_addr + target_ard->length)){
+        //    flag++;
+        //}
+        if(die->attrs[i].name == DW_AT_low_pc && die->attrs[i].u.addr <= integer_address ){
             flag++;
         }
 
-        if(die->attrs[i].name == DW_AT_high_pc && die->attrs[i].u.addr <= (target_ard->beginning_addr + target_ard->length)){
+        if(die->attrs[i].name == DW_AT_high_pc && die->attrs[i].u.addr > integer_address){
             flag++;
         }
+
 
         if(flag == 2){
             return 1;
@@ -2534,19 +2543,19 @@ int is_target_subprogram(struct die_info *die, struct address_range_descriptor *
 
 }
 
-struct die_info *find_target_subprogram(struct die_info *die, struct address_range_descriptor *target_ard){
+struct die_info *find_target_subprogram(struct die_info *die, struct address_range_descriptor *target_ard, CORE_ADDR integer_address){
     if(die->tag == DW_TAG_subprogram){
-        if(is_target_subprogram(die, target_ard) == 1){
+        if(is_target_subprogram(die, target_ard, integer_address) == 1){
             return die;
         }
     }
 
     if(die->sibling != NULL){
-        return find_target_subprogram(die->sibling, target_ard); 
+        return find_target_subprogram(die->sibling, target_ard, integer_address); 
     }
 
     if(die->child != NULL){
-        return find_target_subprogram(die->child, target_ard); 
+        return find_target_subprogram(die->child, target_ard, integer_address); 
     }
     return NULL;
 
@@ -2668,7 +2677,7 @@ int lookup_by_address(struct thin_macho *thin_macho, CORE_ADDR integer_address){
     //printf("compilation unit dir: %s\n", target_cu->comp_dir);
 
 
-    struct die_info *target_die = find_target_subprogram(target_cu->dies, target_ard);
+    struct die_info *target_die = find_target_subprogram(target_cu->dies, target_ard, integer_address);
     if(target_die == NULL){
         //printf("Can not find target subprogram.\n");
         return -1;
