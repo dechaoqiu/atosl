@@ -21,6 +21,19 @@
 extern struct data_of_interest doi;
 char *project_name;
 
+int lookup_by_address(struct thin_macho *thin_macho, CORE_ADDR integer_address){
+    int result = -1;
+    if(thin_macho->dwarf2_per_objfile != NULL){
+        result = lookup_by_address_in_dwarf(thin_macho, integer_address); 
+    }
+
+    if(result == -1){
+        //look in symtable
+        result = lookup_by_address_in_symtable(thin_macho, integer_address);
+    }
+    return result;
+}
+
 void numeric_to_symbols(struct thin_macho *thin_macho, const char **addresses, int numofaddresses){
     char *address_info = NULL;
     int i = 0;
@@ -35,6 +48,7 @@ void numeric_to_symbols(struct thin_macho *thin_macho, const char **addresses, i
         }else{
             integer_address= strtoll(address, NULL, 16);
         }
+        
 
         if (lookup_by_address(thin_macho, integer_address) != 0){
             printf("%s\n", addresses[i]);
@@ -82,7 +96,10 @@ int main(int argc, char *argv[]){
     thin_macho = tf->thin_machos[i];
     //print_all_dwarf2_per_objfile(thin_macho->dwarf2_per_objfile);
 
-    parse_dwarf2_per_objfile(thin_macho->dwarf2_per_objfile);
+    //dwarf2 file?
+    if(thin_macho->dwarf2_per_objfile != NULL){
+        parse_dwarf2_per_objfile(thin_macho->dwarf2_per_objfile);
+    }
     
     //print_thin_macho_aranges(thin_macho);
     

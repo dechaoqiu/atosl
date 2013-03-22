@@ -1399,6 +1399,7 @@ void free_target_file(struct target_file *tf){
                 free(dwarf2_per_objfile);
             }
         }
+        free(tf->thin_machos[i]->all_symbols);
         free(tf->thin_machos[i]);
         i++;
     }
@@ -1695,6 +1696,7 @@ int parse_macho(struct thin_macho*tm){
         //because we will try to read the actual load_command depend on 
         //load_command type, so we do not need to add the offset.
         //offset += sizeof(struct load_command);
+        //printf("%d\n",i);
         parse_load_command(macho_str, &offset, &lc, tm);
         i++;
     }
@@ -2637,7 +2639,27 @@ void print_thin_macho_aranges(struct thin_macho *thin_macho){
     }
 }
 
-int lookup_by_address(struct thin_macho *thin_macho, CORE_ADDR integer_address){
+struct nlist *select_symbol_by_address(struct nlist *all_symbols, uint32_t numofsyms, CORE_ADDR integer_address){
+    int i = 0;
+    for (i = 0; i < numofsyms; i++){
+        if(all_symbols[i].n_value == integer_address){
+            return &all_symbols[i];
+        }
+    }
+    return NULL;
+}
+
+int lookup_by_address_in_symtable(struct thin_macho *tm, CORE_ADDR integer_address){
+    struct nlist *symbol = select_symbol_by_address(tm->all_symbols, tm->nsyms, integer_address);
+    if(symbol == NULL){
+        return -1;
+    }else{
+        printf("%s\n", tm->strings + symbol->n_un.n_strx);
+        return 0;
+    }
+}
+
+int lookup_by_address_in_dwarf(struct thin_macho *thin_macho, CORE_ADDR integer_address){
     CORE_ADDR address = (CORE_ADDR)integer_address;
     struct dwarf2_per_objfile* dwarf2_per_objfile = thin_macho->dwarf2_per_objfile;
     unsigned int num = dwarf2_per_objfile->n_aranges;
@@ -2714,6 +2736,35 @@ int lookup_by_address(struct thin_macho *thin_macho, CORE_ADDR integer_address){
     return 0;
 }
 
+void print_symbols(struct nlist *all_symbols, uint32_t numofsyms, char *strings, uint32_t strsize){
+    int i = 0;
+    for (i = 0; i < numofsyms; i++){
+        printf("%08x: %s\n", all_symbols[i].n_value, strings + all_symbols[i].n_un.n_strx);
+    }
+}
+
+void parse_lc_symtab(char *macho_str, struct symtab_command *command, struct thin_macho*tm){
+    //FIXME BIGENDIAN?
+    uint32_t symoff = command->symoff;
+    uint32_t nsyms = command->nsyms;
+    uint32_t stroff = command->stroff;
+    uint32_t strsize = command->strsize;
+
+    //struct nlist_64 *all_symbols64;
+
+
+    tm->all_symbols = malloc(command->nsyms * sizeof(struct nlist));
+    memset(tm->all_symbols, '\0', command->nsyms * sizeof(struct nlist));                                                              
+    memcpy(tm->all_symbols, macho_str + symoff, command->nsyms * sizeof(struct nlist));
+    tm->nsyms = nsyms;
+
+    tm->strings = macho_str + stroff;
+    tm->strsize = strsize;
+    //print_symbols(tm->all_symbols, tm->nsyms, tm->strings, tm->strsize);
+    //FIXME for 64
+    //all_symbols64 = (struct nlist_64 *)(ofile->object_addr +st->symoff);
+}
+
 int parse_dwarf2_per_objfile(struct dwarf2_per_objfile *dwarf2_per_objfile){
     parse_dwarf_abbrev(dwarf2_per_objfile);
     parse_dwarf_info(dwarf2_per_objfile);
@@ -2732,7 +2783,7 @@ int parse_load_command(char *macho_str, long *offset, struct load_command *lc, s
             process_lc_segment_64(macho_str, offset, tm);
             break;
         case LC_SYMTAB:
-            process_lc_symtab(macho_str, offset);
+            process_lc_symtab(macho_str, offset, tm);
             break;
         case LC_DYSYMTAB:
             process_lc_dysymtab(macho_str, offset);
@@ -2782,13 +2833,51 @@ int parse_load_command(char *macho_str, long *offset, struct load_command *lc, s
         case 41:
             process_lc_data_in_code(macho_str, offset);
             break;
-        case 38:
+        case LC_FUNCTION_STARTS:
             process_lc_function_starts(macho_str, offset);
+            break;
+        case LC_DYLD_INFO_ONLY:
+            process_lc_dyld_info_only(macho_str, offset);
+            break;
+        case LC_DYLD_INFO:
+            process_lc_dyld_info_only(macho_str, offset);
+            break;
+        case LC_VERSION_MIN_IPHONEOS:
+            process_lc_version_min_iphoneos(macho_str, offset);
+            break;
+        case LC_VERSION_MIN_MACOSX:
+            process_lc_version_min_macosx(macho_str, offset);
+            break;
+        case LC_SOURCE_VERSION:
+            process_lc_source_version(macho_str, offset);
+            break;
+        case LC_REEXPORT_DYLIB:
+            process_lc_reexport_dylib(macho_str, offset);
             break;
         default:
             printf("unknown load commmand type, ignoring...\n");
 
     }
+}
+
+int process_lc_source_version(char *macho_str, long *offset){
+    struct source_version_command command = {0};
+    memcpy(&command, macho_str + *offset, sizeof(struct source_version_command));
+    *offset += command.cmdsize;
+    return 0;
+}
+int process_lc_version_min_macosx(char *macho_str, long *offset){
+    struct version_min_command command = {0};
+    memcpy(&command, macho_str + *offset, sizeof(struct version_min_command));
+    *offset += command.cmdsize;
+    return 0;
+}
+
+int process_lc_version_min_iphoneos(char *macho_str, long *offset){
+    struct version_min_command command = {0};
+    memcpy(&command, macho_str + *offset, sizeof(struct version_min_command));
+    *offset += command.cmdsize;
+    return 0;
 }
 
 void print_uuid(struct uuid_command *command){
@@ -2799,6 +2888,20 @@ void print_uuid(struct uuid_command *command){
         printf("%02X", command->uuid[i]);
     }
     printf("\n");
+}
+
+int process_lc_dyld_info_only(char *macho_str, long *offset){
+    struct dyld_info_command command = {0};
+    memcpy(&command, macho_str + *offset, sizeof(struct dyld_info_command));
+    *offset += command.cmdsize;
+    return 0;
+}
+
+int process_lc_dyld_info(char *macho_str, long *offset){
+    struct dyld_info_command command = {0};
+    memcpy(&command, macho_str + *offset, sizeof(struct dyld_info_command));
+    *offset += command.cmdsize;
+    return 0;
 }
 
 int process_lc_data_in_code(char *macho_str, long *offset){
@@ -2924,6 +3027,14 @@ int process_lc_prebound_dylib(char *macho_str, long *offset){
     *offset += command.cmdsize;
     return 0;
 }
+
+int process_lc_reexport_dylib(char *macho_str, long *offset){
+    struct prebound_dylib_command command = {0};
+    memcpy(&command, macho_str + *offset, sizeof(struct prebound_dylib_command));
+    *offset += command.cmdsize;
+    return 0;
+}
+
 int process_lc_id_dylib(char *macho_str, long *offset){
     struct dylib_command command = {0};
     memcpy(&command, macho_str + *offset, sizeof(struct dylib_command));
@@ -2958,9 +3069,10 @@ int process_lc_dysymtab(char *macho_str, long *offset){
     return 0;
 }
 
-int process_lc_symtab(char *macho_str, long *offset){
+int process_lc_symtab(char *macho_str, long *offset, struct thin_macho*tm){
     struct symtab_command command = {0};
     memcpy(&command, macho_str + *offset, sizeof(struct symtab_command));
+    parse_lc_symtab(macho_str, &command, tm); 
     *offset += command.cmdsize;
     return 0;
 }

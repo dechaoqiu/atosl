@@ -1,6 +1,7 @@
 # Object files
 *.o
 ctags
+UIKit
 #CrashTest*
 atos
 debug_atos
