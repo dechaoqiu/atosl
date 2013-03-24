@@ -18,7 +18,7 @@
 
 #include "macho.h"
 
-extern char *project_name;
+char *project_name;
 struct data_of_interest doi = {0};
 
 static struct die_info * read_die_and_children (char *info_ptr, struct dwarf2_cu *cu, char **new_info_ptr, struct die_info *parent);
@@ -1005,6 +1005,15 @@ void free_dwarf2_per_objfile(struct dwarf2_per_objfile *dwarf2_per_objfile){
     free(dwarf2_per_objfile);
 }
 
+void get_uuid_of_thin(struct thin_macho*thin_macho, char*uuid){
+    int i = 0;
+    while(i < 16){
+        sprintf(uuid + (i * 2), "%02x", thin_macho->uuid[i]);
+        i++;
+    }
+}
+
+
 struct dwarf2_per_objfile* parse_dwarf_segment(char *macho_str, long offset,struct segment_command *command){
     uint32_t numofdwarfsections = command->nsects;
 
@@ -1524,6 +1533,7 @@ struct target_file *parse_file(const char *filename){
     fclose(fp); 
     return tf;
 }
+
 void int32_endian_convert(int32_t *num)
 {
     int32_t original_num = *num;
@@ -2774,7 +2784,7 @@ int parse_dwarf2_per_objfile(struct dwarf2_per_objfile *dwarf2_per_objfile){
 int parse_load_command(char *macho_str, long *offset, struct load_command *lc, struct thin_macho*tm){
     switch (lc->cmd){
         case LC_UUID: 
-            process_lc_uuid(macho_str, offset);
+            process_lc_uuid(macho_str, offset, tm);
             break;
         case LC_SEGMENT: 
             process_lc_segment(macho_str, offset, tm);
@@ -2918,11 +2928,16 @@ int process_lc_function_starts(char *macho_str, long *offset){
     return 0;
 }
 
-int process_lc_uuid(char *macho_str, long *offset){
+int process_lc_uuid(char *macho_str, long *offset, struct thin_macho*tm){
     struct uuid_command command = {0};
     memcpy(&command, macho_str + *offset, sizeof(struct uuid_command));
     //print_uuid(&command);
     *offset += command.cmdsize;
+    int i = 0;
+    while(i < 16){
+        tm->uuid[i] = command.uuid[i];
+        i++;
+    }
     return 0; 
 }
 

@@ -476,6 +476,7 @@ struct thin_macho{
     struct nlist_64 *all_symbols64;
     uint32_t nsyms;
     uint32_t strsize;
+    uint8_t uuid[16];
 };
 
 struct target_file{
@@ -483,6 +484,7 @@ struct target_file{
     uint32_t numofarchs;
 };
 int select_thin_macho_by_arch(struct target_file *tf, const char *arch);
+void get_uuid_of_thin(struct thin_macho*thin_macho, char *uuid);
 void free_target_file(struct target_file *tf);
 int lookup_by_address_in_dwarf(struct thin_macho *thin_macho, CORE_ADDR integer_address);
 int lookup_by_address_in_symtable(struct thin_macho *thin_macho, CORE_ADDR integer_address);
@@ -497,7 +499,7 @@ int process_lc_version_min_iphoneos(char *macho_str, long *offset);
 int process_lc_version_min_macosx(char *macho_str, long *offset);
 int process_lc_source_version(char *macho_str, long *offset);
 int process_lc_reexport_dylib(char *macho_str, long *offset);
-int process_lc_uuid(char *macho_str, long *offset);
+int process_lc_uuid(char *macho_str, long *offset, struct thin_macho*tm);
 int process_lc_segment(char *macho_str, long *offset, struct thin_macho*tm);
 int process_lc_segment_64(char *macho_str, long *offset, struct thin_macho*tm);
 int process_lc_sub_client(char *macho_str, long *offset);

@@ -19,7 +19,7 @@
 #include "macho.h"
 
 extern struct data_of_interest doi;
-char *project_name;
+extern char *project_name;
 
 int lookup_by_address(struct thin_macho *thin_macho, CORE_ADDR integer_address){
     int result = -1;
@@ -107,5 +107,6 @@ int main(int argc, char *argv[]){
     //printf("vmaddr for text segment: 0x%x\n", doi.text_vmaddr);
     //printf("vmaddr_64 for text segment: 0x%llx\n", doi.text_vmaddr_64);
     free_target_file(tf);
+    return 0;
 }
 

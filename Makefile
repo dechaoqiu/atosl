@@ -28,6 +28,9 @@ converter_debug.o: converter.c converter.h
 macho_debug.o: macho.c macho.h
 	$(CC) $(CFLAGS) macho.c $(OFLAG) macho_debug.o
 
+uuid_reader.o: uuid_reader.c macho.h
+	$(CC) $(CFLAGS) uuid_reader.c $(OFLAG) uuid_reader.o
+
 debug: CFLAGS += -g -DDEBUG
 debug: $(DEBUG_OBJECTS)
 	$(CC) $(OFLAG) $(DEBUG) $(DEBUG_OBJECTS)
@@ -35,9 +38,12 @@ debug: $(DEBUG_OBJECTS)
 release: $(OBJECTS)
 	$(CC) $(OFLAG) $(EXECUTABLE) $(OBJECTS)
 
+uuid: $(OBJECTS) uuid_reader.o
+	$(CC) $(OFLAG) uuid_reader macho.o converter.o uuid_reader.o
 clean:
 	rm -rf $(EXECUTABLE) $(DEBUG) *.o
 
 install:
 	cp atos /usr/local/bin/atos
+	cp uuid_reader /usr/local/bin/uuid_reader
 
