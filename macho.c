@@ -2840,7 +2840,7 @@ int parse_load_command(char *macho_str, long *offset, struct load_command *lc, s
         case LC_SUB_CLIENT:
             process_lc_sub_client(macho_str, offset);
             break;
-        case 41:
+        case LC_DATA_IN_CODE:
             process_lc_data_in_code(macho_str, offset);
             break;
         case LC_FUNCTION_STARTS:
@@ -2863,6 +2863,60 @@ int parse_load_command(char *macho_str, long *offset, struct load_command *lc, s
             break;
         case LC_REEXPORT_DYLIB:
             process_lc_reexport_dylib(macho_str, offset);
+            break;
+        case LC_SYMSEG:
+            process_lc_symseg(macho_str, offset);
+            break;
+        case LC_LOADFVMLIB:
+            process_lc_loadfvmlib(macho_str, offset);
+            break;
+        case LC_IDFVMLIB:
+            process_lc_idfvmlib(macho_str, offset);
+            break;
+        case LC_IDENT:
+            process_lc_ident(macho_str, offset);
+            break;
+        case LC_FVMFILE:
+            process_lc_fvmfile(macho_str, offset);
+            break;
+        case LC_PREBIND_CKSUM:
+            process_lc_prebind_cksum(macho_str, offset);
+            break;
+        case LC_LOAD_WEAK_DYLIB:
+            process_lc_load_weak_dylib(macho_str, offset);
+            break;
+        case LC_RPATH:
+            process_lc_rpath(macho_str, offset);
+            break;
+        case LC_CODE_SIGNATURE:
+            process_lc_code_signature(macho_str, offset);
+            break;
+        case LC_SEGMENT_SPLIT_INFO:
+            process_lc_segment_split_info(macho_str, offset);
+            break;
+        case LC_ENCRYPTION_INFO:
+            process_lc_encryption_info(macho_str, offset);
+            break;
+        case LC_DYLD_ENVIRONMENT:
+            process_lc_dyld_environment(macho_str, offset);
+            break;
+        case LC_MAIN:
+            process_lc_main(macho_str, offset);
+            break;
+        case LC_DYLIB_CODE_SIGN_DRS:
+            process_lc_dylib_code_sign_drs(macho_str, offset);
+            break;
+        case LC_PREPAGE:
+            //printf("known load commmand type LC_PREPAGE, but ignoring...\n");
+            process_lc_command(macho_str, offset);
+            break;
+        case LC_LAZY_LOAD_DYLIB:
+            //printf("known load commmand type LC_LAZY_LOAD_DYLIB, but ignoring...\n");
+            process_lc_command(macho_str, offset);
+            break;
+        case LC_LOAD_UPWARD_DYLIB:
+            //printf("known load commmand type LC_LOAD_UPWARD_DYLIB, but ignoring...\n");
+            process_lc_command(macho_str, offset);
             break;
         default:
             printf("unknown load commmand type, ignoring...\n");
@@ -3056,6 +3110,7 @@ int process_lc_id_dylib(char *macho_str, long *offset){
     *offset += command.cmdsize;
     return 0;
 }
+
 int process_lc_load_dylib(char *macho_str, long *offset){
     struct dylib_command command = {0};
     memcpy(&command, macho_str + *offset, sizeof(struct dylib_command));
@@ -3092,3 +3147,108 @@ int process_lc_symtab(char *macho_str, long *offset, struct thin_macho*tm){
     return 0;
 }
 
+int process_lc_symseg(char *macho_str, long *offset){
+    struct symseg_command  command = {0};
+    memcpy(&command, macho_str + *offset, sizeof(struct symseg_command));
+    *offset += command.cmdsize;
+    return 0;
+}
+
+int process_lc_loadfvmlib(char *macho_str, long *offset){
+    struct fvmlib_command  command = {0};
+    memcpy(&command, macho_str + *offset, sizeof(struct fvmlib_command));
+    *offset += command.cmdsize;
+    return 0;
+}
+
+int process_lc_idfvmlib(char *macho_str, long *offset){
+    struct fvmlib_command  command = {0};
+    memcpy(&command, macho_str + *offset, sizeof(struct fvmlib_command));
+    *offset += command.cmdsize;
+    return 0;
+}
+int process_lc_ident(char *macho_str, long *offset){
+    struct ident_command  command = {0};
+    memcpy(&command, macho_str + *offset, sizeof(struct ident_command));
+    *offset += command.cmdsize;
+    return 0;
+}
+int process_lc_fvmfile(char *macho_str, long *offset){
+    struct fvmfile_command command = {0};
+    memcpy(&command, macho_str + *offset, sizeof(struct fvmfile_command));
+    *offset += command.cmdsize;
+    return 0;
+}
+int process_lc_prepage(char *macho_str, long *offset){
+    struct symtab_command command = {0};
+    memcpy(&command, macho_str + *offset, sizeof(struct symtab_command));
+    *offset += command.cmdsize;
+    return 0;
+}
+
+int process_lc_prebind_cksum(char *macho_str, long *offset){
+    struct prebind_cksum_command command = {0};
+    memcpy(&command, macho_str + *offset, sizeof(struct prebind_cksum_command));
+    *offset += command.cmdsize;
+    return 0;
+}
+int process_lc_load_weak_dylib(char *macho_str, long *offset){
+    struct dylib_command command = {0};
+    memcpy(&command, macho_str + *offset, sizeof(struct dylib_command));
+    *offset += command.cmdsize;
+    return 0;
+}
+int process_lc_rpath(char *macho_str, long *offset){
+    struct rpath_command command = {0};
+    memcpy(&command, macho_str + *offset, sizeof(struct rpath_command));
+    *offset += command.cmdsize;
+    return 0;
+}
+int process_lc_code_signature(char *macho_str, long *offset){
+    struct linkedit_data_command command = {0};
+    memcpy(&command, macho_str + *offset, sizeof(struct linkedit_data_command));
+    *offset += command.cmdsize;
+    return 0;
+}
+int process_lc_segment_split_info(char *macho_str, long *offset){
+    struct linkedit_data_command command = {0};
+    memcpy(&command, macho_str + *offset, sizeof(struct linkedit_data_command));
+    *offset += command.cmdsize;
+    return 0;
+}
+int process_lc_lazy_load_dylib(char *macho_str, long *offset){
+    struct symtab_command command = {0};
+    memcpy(&command, macho_str + *offset, sizeof(struct symtab_command));
+    *offset += command.cmdsize;
+    return 0;
+}
+int process_lc_encryption_info(char *macho_str, long *offset){
+    struct encryption_info_command command = {0};
+    memcpy(&command, macho_str + *offset, sizeof(struct encryption_info_command));
+    *offset += command.cmdsize;
+    return 0;
+}
+int process_lc_command(char *macho_str, long *offset){
+    struct load_command command = {0};
+    memcpy(&command, macho_str + *offset, sizeof(struct load_command));
+    *offset += command.cmdsize;
+    return 0;
+}
+int process_lc_dyld_environment(char *macho_str, long *offset){
+    struct dylinker_command command = {0};
+    memcpy(&command, macho_str + *offset, sizeof(struct dylinker_command));
+    *offset += command.cmdsize;
+    return 0;
+}
+int process_lc_main(char *macho_str, long *offset){
+    struct entry_point_command command = {0};
+    memcpy(&command, macho_str + *offset, sizeof(struct entry_point_command));
+    *offset += command.cmdsize;
+    return 0;
+}
+int process_lc_dylib_code_sign_drs(char *macho_str, long *offset){
+    struct linkedit_data_command command = {0};
+    memcpy(&command, macho_str + *offset, sizeof(struct linkedit_data_command));
+    *offset += command.cmdsize;
+    return 0;
+}
