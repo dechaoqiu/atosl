@@ -26,7 +26,6 @@ int lookup_by_address(struct thin_macho *thin_macho, CORE_ADDR integer_address){
     if(thin_macho->dwarf2_per_objfile != NULL){
         result = lookup_by_address_in_dwarf(thin_macho, integer_address); 
     }
-
     if(result == -1){
         //look in symtable
         result = lookup_by_address_in_symtable(thin_macho, integer_address);

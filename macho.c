@@ -2649,22 +2649,41 @@ void print_thin_macho_aranges(struct thin_macho *thin_macho){
     }
 }
 
-struct nlist *select_symbol_by_address(struct nlist *all_symbols, uint32_t numofsyms, CORE_ADDR integer_address){
+struct nlist *select_symbol_by_address(struct nlist *all_symbols, uint32_t numofsyms, CORE_ADDR integer_address, int *offset){
+    uint32_t min_distance = UINT32_MAX;
+    uint32_t temp = 0;
+    int min_index = -1;
     int i = 0;
     for (i = 0; i < numofsyms; i++){
-        if(all_symbols[i].n_value == integer_address){
+        if (all_symbols[i].n_value > integer_address){
+            continue;
+        }
+
+        temp = integer_address - all_symbols[i].n_value; 
+        if (temp == 0){
+            *offset = 0;
             return &all_symbols[i];
         }
+        if (min_distance > temp){
+            min_distance = temp; 
+            min_index = i;
+        }
     }
-    return NULL;
+    if(min_index == -1){
+        return NULL;
+    }else{
+        *offset = min_distance;
+        return &all_symbols[min_index];
+    }
 }
 
 int lookup_by_address_in_symtable(struct thin_macho *tm, CORE_ADDR integer_address){
-    struct nlist *symbol = select_symbol_by_address(tm->all_symbols, tm->nsyms, integer_address);
+    int offset = -1;
+    struct nlist *symbol = select_symbol_by_address(tm->all_symbols, tm->nsyms, integer_address, &offset);
     if(symbol == NULL){
         return -1;
     }else{
-        printf("%s\n", tm->strings + symbol->n_un.n_strx);
+        printf("%s (in %s) + %d\n", tm->strings + symbol->n_un.n_strx, project_name, offset);
         return 0;
     }
 }
