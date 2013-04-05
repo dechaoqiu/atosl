@@ -2661,12 +2661,16 @@ void select_symbol_by_address(struct nlist *symbols, uint32_t nsyms, CORE_ADDR t
         if (!*found_symbol && symbols[i].n_value <= target) {
             *found_symbol = &symbols[i];
             *offset = target - symbols[i].n_value; 
+            //printf("+++%d\n", i);
+            //printf("+++offset: %d\n", *offset);
             /*  If we have found a symbol already, but if the address we want is
              *  greater than the current symbol's value and the current symbol is later
              *  than the last one found, the current one is a closer match. */
         } else if (*found_symbol && symbols[i].n_value <= target && ((*found_symbol)->n_value < symbols[i].n_value)) {
             *found_symbol = &symbols[i];
             *offset = target - symbols[i].n_value; 
+            //printf("---i: %d\n", i);
+            //printf("---offset: %d\n", *offset);
         }
     }
 
@@ -2700,10 +2704,11 @@ void select_symbol_by_address(struct nlist *symbols, uint32_t nsyms, CORE_ADDR t
 int lookup_by_address_in_symtable(struct thin_macho *tm, CORE_ADDR integer_address){
     int offset = -1;
     struct nlist *found_symbol = NULL;
-    struct nlist *global_syms = (struct nlist *)(tm->all_symbols + tm->symbolInformation.firstGlobalSymbol * sizeof(struct nlist)),
-                 *local_syms = (struct nlist *)(tm->all_symbols + tm->symbolInformation.firstLocalSymbol * sizeof(struct nlist));
-    select_symbol_by_address(global_syms, tm->symbolInformation.firstGlobalSymbol, integer_address, &found_symbol, &offset);
-    select_symbol_by_address(local_syms, tm->symbolInformation.firstLocalSymbol, integer_address, &found_symbol, &offset);
+    //struct nlist *global_syms = (struct nlist *)(tm->all_symbols + tm->symbolInformation.firstGlobalSymbol * sizeof(struct nlist)),
+    //             *local_syms = (struct nlist *)(tm->all_symbols + tm->symbolInformation.firstLocalSymbol * sizeof(struct nlist));
+    //select_symbol_by_address(global_syms, tm->symbolInformation.numGlobalSymbols, integer_address, &found_symbol, &offset);
+    //select_symbol_by_address(local_syms, tm->symbolInformation.numLocalSymbols, integer_address, &found_symbol, &offset);
+    select_symbol_by_address(tm->all_symbols, tm->nsyms, integer_address, &found_symbol, &offset);
     if(found_symbol){
         printf("%s (in %s) + %d\n", tm->strings + found_symbol->n_un.n_strx, project_name, offset);
         return 0;
