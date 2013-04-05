@@ -466,6 +466,7 @@ struct subfile
 };
 
 struct thin_macho{
+    uint8_t uuid[16];
     char *data;
     char *strings;
     long int size;
@@ -476,7 +477,20 @@ struct thin_macho{
     struct nlist_64 *all_symbols64;
     uint32_t nsyms;
     uint32_t strsize;
-    uint8_t uuid[16];
+    /* * The binary image's dynamic symbol information, if any. */
+    struct {
+        /* * Symbol table index for global symbols. */
+        uint32_t firstGlobalSymbol;
+
+        /* * Number of global symbols. */
+        uint32_t numGlobalSymbols;
+
+        /* * Symbol table index for local symbols. */
+        uint32_t firstLocalSymbol;
+
+        /* * Number of local symbols. */
+        uint32_t numLocalSymbols;
+    } symbolInformation;
 };
 
 struct target_file{
@@ -516,7 +530,7 @@ int process_lc_id_dylib(char *macho_str, long *offset);
 int process_lc_load_dylib(char *macho_str, long *offset);
 int process_lc_thread(char *macho_str, long *offset);
 int process_lc_unixthread(char *macho_str, long *offset);
-int process_lc_dysymtab(char *macho_str, long *offset);
+int process_lc_dysymtab(char *macho_str, long *offset, struct thin_macho*tm);
 int process_lc_symtab(char *macho_str, long *offset, struct thin_macho*tm);
 int process_lc_data_in_code(char *macho_str, long *offset);
 int process_lc_function_starts(char *macho_str, long *offset);

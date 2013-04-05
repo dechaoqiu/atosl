@@ -2649,42 +2649,66 @@ void print_thin_macho_aranges(struct thin_macho *thin_macho){
     }
 }
 
-struct nlist *select_symbol_by_address(struct nlist *all_symbols, uint32_t numofsyms, CORE_ADDR integer_address, int *offset){
-    uint32_t min_distance = UINT32_MAX;
-    uint32_t temp = 0;
-    int min_index = -1;
-    int i = 0;
-    for (i = 0; i < numofsyms; i++){
-        if (all_symbols[i].n_value > integer_address){
+void select_symbol_by_address(struct nlist *symbols, uint32_t nsyms, CORE_ADDR target, struct nlist **found_symbol, int *offset){
+    uint32_t i= 0;
+    for (i = 0; i < nsyms; ++i) {
+        /*  The symbol must be defined in a section, and must not be a debugging entry. */
+        if ((symbols[i].n_type & N_TYPE) != N_SECT || ((symbols[i].n_type & N_STAB) != 0)) {
             continue;
         }
+        /*  If we haven't already found a symbol and the address we want is
+         *  greater than the symbol's value, save this symbol. */
+        if (!*found_symbol && symbols[i].n_value <= target) {
+            *found_symbol = &symbols[i];
+            *offset = target - symbols[i].n_value; 
+            /*  If we have found a symbol already, but if the address we want is
+             *  greater than the current symbol's value and the current symbol is later
+             *  than the last one found, the current one is a closer match. */
+        } else if (*found_symbol && symbols[i].n_value <= target && ((*found_symbol)->n_value < symbols[i].n_value)) {
+            *found_symbol = &symbols[i];
+            *offset = target - symbols[i].n_value; 
+        }
+    }
 
-        temp = integer_address - all_symbols[i].n_value; 
-        if (temp == 0){
-            *offset = 0;
-            return &all_symbols[i];
-        }
-        if (min_distance > temp){
-            min_distance = temp; 
-            min_index = i;
-        }
-    }
-    if(min_index == -1){
-        return NULL;
-    }else{
-        *offset = min_distance;
-        return &all_symbols[min_index];
-    }
+//    uint32_t min_distance = UINT32_MAX;
+//    uint32_t temp = 0;
+//    int min_index = -1;
+//    int i = 0;
+//    for (i = 0; i < numofsyms; i++){
+//        if (all_symbols[i].n_value > integer_address){
+//            continue;
+//        }
+//
+//        temp = integer_address - all_symbols[i].n_value; 
+//        if (temp == 0){
+//            *offset = 0;
+//            return &all_symbols[i];
+//        }
+//        if (min_distance > temp){
+//            min_distance = temp; 
+//            min_index = i;
+//        }
+//    }
+//    if(min_index == -1){
+//        return NULL;
+//    }else{
+//        *offset = min_distance;
+//        return &all_symbols[min_index];
+//    }
 }
 
 int lookup_by_address_in_symtable(struct thin_macho *tm, CORE_ADDR integer_address){
     int offset = -1;
-    struct nlist *symbol = select_symbol_by_address(tm->all_symbols, tm->nsyms, integer_address, &offset);
-    if(symbol == NULL){
-        return -1;
-    }else{
-        printf("%s (in %s) + %d\n", tm->strings + symbol->n_un.n_strx, project_name, offset);
+    struct nlist *found_symbol = NULL;
+    struct nlist *global_syms = (struct nlist *)(tm->all_symbols + tm->symbolInformation.firstGlobalSymbol * sizeof(struct nlist)),
+                 *local_syms = (struct nlist *)(tm->all_symbols + tm->symbolInformation.firstLocalSymbol * sizeof(struct nlist));
+    select_symbol_by_address(global_syms, tm->symbolInformation.firstGlobalSymbol, integer_address, &found_symbol, &offset);
+    select_symbol_by_address(local_syms, tm->symbolInformation.firstLocalSymbol, integer_address, &found_symbol, &offset);
+    if(found_symbol){
+        printf("%s (in %s) + %d\n", tm->strings + found_symbol->n_un.n_strx, project_name, offset);
         return 0;
+    }else{
+        return -1;
     }
 }
 
@@ -2815,7 +2839,7 @@ int parse_load_command(char *macho_str, long *offset, struct load_command *lc, s
             process_lc_symtab(macho_str, offset, tm);
             break;
         case LC_DYSYMTAB:
-            process_lc_dysymtab(macho_str, offset);
+            process_lc_dysymtab(macho_str, offset, tm);
             break;
         case LC_THREAD:
             process_lc_thread(macho_str, offset);
@@ -3151,9 +3175,13 @@ int process_lc_unixthread(char *macho_str, long *offset){
     return 0;
 }
 
-int process_lc_dysymtab(char *macho_str, long *offset){
+int process_lc_dysymtab(char *macho_str, long *offset, struct thin_macho*tm){
     struct dysymtab_command command = {0};
     memcpy(&command, macho_str + *offset, sizeof(struct dysymtab_command));
+    tm->symbolInformation.firstGlobalSymbol = command.iextdefsym;
+    tm->symbolInformation.numGlobalSymbols = command.nextdefsym;
+    tm->symbolInformation.firstLocalSymbol = command.ilocalsym;
+    tm->symbolInformation.numLocalSymbols = command.nlocalsym;
     *offset += command.cmdsize;
     return 0;
 }
