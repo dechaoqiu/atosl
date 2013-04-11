@@ -90,7 +90,8 @@ int main(int argc, char *argv[]){
     //performance
     int i = select_thin_macho_by_arch(tf, arch);
     if(i == -1){
-        printf("atos: Unknown architecture: %s\n", arch);
+        printf("atos: Can not find macho for architecture: %s\n", arch);
+        exit(-1);
     }
     thin_macho = tf->thin_machos[i];
     //print_all_dwarf2_per_objfile(thin_macho->dwarf2_per_objfile);
