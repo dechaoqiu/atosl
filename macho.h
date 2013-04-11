@@ -1,3 +1,5 @@
+#ifndef MACHO_H
+#define MACHO_H
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -5,17 +7,42 @@
 #include <string.h>
 #include "loader.h"
 #include "fat.h"
-#include "language.h"
 #include "dwarf2.h"
 #include "cputype.h"
 #include "converter.h"
 #include "nlist.h"
+#include "debug.h"
 
 /* We hold several abbreviation tables in memory at the same time. */
 #ifndef ABBREV_HASH_SIZE
 #define ABBREV_HASH_SIZE 121
 #endif
 #define INITIAL_LINE_VECTOR_LENGTH  1000
+
+
+/* Languages represented in the symbol table and elsewhere.
+*/
+
+enum language
+{
+    language_unknown,		/* Language not known */
+    language_auto,		/* Placeholder for automatic setting */
+    language_c,			/* C */
+    language_cplus,		/* C++ */
+    language_objc,		/* Objective-C */
+    /* APPLE LOCAL objcplus */
+    language_objcplus,		/* Objective-C++ */
+    language_java,		/* Java */
+    language_fortran,		/* Fortran */
+    language_m2,		/* Modula-2 */
+    language_asm,		/* Assembly language */
+    language_scm,    		/* Scheme / Guile */
+    language_pascal,		/* Pascal */
+    language_ada,		/* Ada */
+    language_minimal,		/* All other languages, minimal support only */
+    nr_languages
+};
+
 
 typedef unsigned int CORE_ADDR;
 //typedef uint64_t CORE_ADDR;
@@ -552,3 +579,4 @@ int process_lc_load_upward_dylib(char *macho_str, long *offset);
 int process_lc_dyld_environment(char *macho_str, long *offset);
 int process_lc_main(char *macho_str, long *offset);
 int process_lc_dylib_code_sign_drs(char *macho_str, long *offset);
+#endif /*  MACHO_H */

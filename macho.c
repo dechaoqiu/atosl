@@ -19,7 +19,7 @@
 #include "macho.h"
 
 char *project_name;
-struct data_of_interest doi = {0};
+//#struct data_of_interest doi = {0};
 
 static struct die_info * read_die_and_children (char *info_ptr, struct dwarf2_cu *cu, char **new_info_ptr, struct die_info *parent);
 static struct die_info * read_die_and_siblings (char *info_ptr, struct dwarf2_cu *cu, char **new_info_ptr, struct die_info *parent);
@@ -99,18 +99,9 @@ static unsigned int read_4_bytes (unsigned char *info_ptr)
 {
     unsigned int ret = 0;
     ret = info_ptr[3];
-    //printf("ret: %x\n", ret);
-    //printf("info_ptr: %x\n", (unsigned char)info_ptr[3]);
     ret = (ret << 8) + info_ptr[2];
-    //printf("ret: %x\n", ret);
-    //printf("info_ptr: %x\n", (unsigned char)info_ptr[2]);
     ret = (ret << 8) + info_ptr[1];
-    //printf("ret: %x\n", ret);
-    //printf("info_ptr: %x\n", (unsigned char)info_ptr[1]);
     ret = (ret << 8) + info_ptr[0];
-    //printf("ret: %x\n", ret);
-    //printf("info_ptr: %x\n", (unsigned char)info_ptr[0]);
-    //printf("\n");
     return ret;
 }
 
@@ -572,50 +563,6 @@ static struct line_header * dwarf_decode_line_header (unsigned int offset, struc
     return lh;
 }
 
-
-/* This function exists to work around a bug in certain compilers
-   (particularly GCC 2.95), in which the first line number marker of a
-   function does not show up until after the prologue, right before
-   the second line number marker.  This function shifts ADDRESS down
-   to the beginning of the function if necessary, and is called on
-   addresses passed to record_line.  */
-//
-//static CORE_ADDR check_cu_functions (CORE_ADDR address, struct dwarf2_cu *cu)
-//{
-//    struct function_range *fn;
-//
-//    /* Find the function_range containing address.  */
-//    if (!cu->first_fn)
-//        return address;
-//
-//    if (!cu->cached_fn)
-//        cu->cached_fn = cu->first_fn;
-//
-//    fn = cu->cached_fn;
-//    while (fn)
-//        if (fn->lowpc <= address && fn->highpc > address)
-//            goto found;
-//        else
-//            fn = fn->next;
-//
-//    fn = cu->first_fn;
-//    while (fn && fn != cu->cached_fn)
-//        if (fn->lowpc <= address && fn->highpc > address)
-//            goto found;
-//        else
-//            fn = fn->next;
-//
-//    return address;
-//
-//found:
-//    if (fn->seen_line)
-//        return address;
-//    if (address != fn->lowpc)
-//        printf("misplaced first line number at 0x%lx for '%s'", (unsigned long) address, fn->name);
-//    fn->seen_line = 1;
-//    return fn->lowpc;
-//}
-
 /* Add a linetable entry for line number LINE and address PC to the
    line vector for SUBFILE.  */
 
@@ -1013,7 +960,6 @@ void get_uuid_of_thin(struct thin_macho*thin_macho, char*uuid){
     }
 }
 
-
 struct dwarf2_per_objfile* parse_dwarf_segment(char *macho_str, long offset,struct segment_command *command){
     uint32_t numofdwarfsections = command->nsects;
 
@@ -1086,7 +1032,7 @@ struct dwarf2_per_objfile* parse_dwarf_segment(char *macho_str, long offset,stru
             //do nothing for now
             free(temp);
         }else{
-            printf("╮(╯▽╰)╭, %s \n", dwarf_section_headers[i].sectname);
+            printf("╮(╯▽╰)╭ Unknown Section, %s \n", dwarf_section_headers[i].sectname);
             free(temp);
         }
         i++;
@@ -1169,7 +1115,7 @@ struct dwarf2_per_objfile* parse_dwarf_segment_64(char *macho_str, long offset,s
             //do nothing for now
             free(temp);
         }else{
-            printf("╮(╯▽╰)╭, %s \n", dwarf_section_headers[i].sectname);
+            printf("╮(╯▽╰)╭ Unknown Section, %s \n", dwarf_section_headers[i].sectname);
             free(temp);
         }
         i++;
@@ -1303,7 +1249,6 @@ int parse_normal(FILE *fp, uint32_t magic_number, struct target_file *tf){
 }
 
 void free_buffers(struct dwarf2_per_objfile *dwarf2_per_objfile){
-    // free buffers
     free(dwarf2_per_objfile->info_buffer);
     free(dwarf2_per_objfile->abbrev_buffer);
     free(dwarf2_per_objfile->line_buffer);
@@ -1345,7 +1290,6 @@ void free_dwarf_aranges(struct dwarf2_per_objfile *dwarf2_per_objfile){
         i++;
     }
 }
-
 
 /* Free a linked list of dies.  */
 static void free_die_list (struct die_info *dies)
@@ -1418,7 +1362,7 @@ void free_target_file(struct target_file *tf){
 
 int select_thin_macho_by_arch(struct target_file *tf, const char *target_arch){
     int i = 0;
-    char *arch = "other";
+    char *arch = NULL;
     while(i < tf->numofarchs){
         struct thin_macho *thin_macho = tf->thin_machos[i];
         switch(thin_macho->cputype){
@@ -1465,12 +1409,12 @@ int select_thin_macho_by_arch(struct target_file *tf, const char *target_arch){
                arch = "ppc64";
                break;
         }
-        if (strcmp(arch, target_arch) == 0){
+        if (arch != NULL && strcmp(arch, target_arch) == 0){
             return i;
         }
         i++;
     }
-    if (strcmp(arch, "other") == 0){
+    if (arch == NULL){
         printf("unknow arch: %s\n", target_arch);
     }
     return -1;
@@ -1479,7 +1423,7 @@ int select_thin_macho_by_arch(struct target_file *tf, const char *target_arch){
 struct target_file *parse_file(const char *filename){
     FILE *fp = fopen(filename, "rb");
     if (fp == NULL){
-        printf("Read File Error.\n");
+        printf("Can not open file %s for read .\n", filename);
         exit(-1);
     }
 
@@ -1498,7 +1442,7 @@ struct target_file *parse_file(const char *filename){
     {
         seekreturn = fseek (fp, 0 - sizeof(uint32_t), SEEK_CUR); 
         assert(seekreturn == 0);
-        //printf("magic_number: %x\n", magic_number);
+        debug("magic_number: %x\n", magic_number);
         switch(magic_number){
             case MH_MAGIC:
                 //current machine endian is same with host machine
@@ -2359,7 +2303,6 @@ void parse_dwarf_info(struct dwarf2_per_objfile *dwarf2_per_objfile){
     int i = 0;
     struct dwarf2_cu *temp = NULL;
     for (i = 0; i< dwarf2_per_objfile->n_comp_units; i++){
-        //printf("Load comp_units %d\n", i);
         temp = load_full_comp_unit(dwarf2_per_objfile, i);
     }
 }
@@ -2593,26 +2536,6 @@ unsigned int get_stmt_list_attribute(struct die_info *die, char *flag){
     return 0;
 }
 
-/* 
-   void print_line_vector(struct subfile *subfile){
-   struct linetable_entry *e;
-   int i = 0;
-   for(i = 0; i < subfile->line_vector->nitems; i ++){
-   e = subfile->line_vector->item + i;
-   switch(sizeof(e->pc)){
-   case 4:
-   printf("address: 0x%08x line: %d\n", e->pc, e->line);
-   break;
-   case 8:
-   printf("address: 0x%016llx line: %d\n", e->pc, e->line);
-   break;
-   default:
-   printf("wrong address size\n");
-   }
-   }
-   }
-   */
-
 int get_lineno_for_address(struct subfile *subfile, CORE_ADDR address){
     struct linetable_entry *current_entry;
     struct linetable_entry *next_entry;
@@ -2661,44 +2584,14 @@ void select_symbol_by_address(struct nlist *symbols, uint32_t nsyms, CORE_ADDR t
         if (!*found_symbol && symbols[i].n_value <= target) {
             *found_symbol = &symbols[i];
             *offset = target - symbols[i].n_value; 
-            //printf("+++%d\n", i);
-            //printf("+++offset: %d\n", *offset);
             /*  If we have found a symbol already, but if the address we want is
              *  greater than the current symbol's value and the current symbol is later
              *  than the last one found, the current one is a closer match. */
         } else if (*found_symbol && symbols[i].n_value <= target && ((*found_symbol)->n_value < symbols[i].n_value)) {
             *found_symbol = &symbols[i];
             *offset = target - symbols[i].n_value; 
-            //printf("---i: %d\n", i);
-            //printf("---offset: %d\n", *offset);
         }
     }
-
-//    uint32_t min_distance = UINT32_MAX;
-//    uint32_t temp = 0;
-//    int min_index = -1;
-//    int i = 0;
-//    for (i = 0; i < numofsyms; i++){
-//        if (all_symbols[i].n_value > integer_address){
-//            continue;
-//        }
-//
-//        temp = integer_address - all_symbols[i].n_value; 
-//        if (temp == 0){
-//            *offset = 0;
-//            return &all_symbols[i];
-//        }
-//        if (min_distance > temp){
-//            min_distance = temp; 
-//            min_index = i;
-//        }
-//    }
-//    if(min_index == -1){
-//        return NULL;
-//    }else{
-//        *offset = min_distance;
-//        return &all_symbols[min_index];
-//    }
 }
 
 int lookup_by_address_in_symtable(struct thin_macho *tm, CORE_ADDR integer_address){
@@ -2738,9 +2631,9 @@ int lookup_by_address_in_dwarf(struct thin_macho *thin_macho, CORE_ADDR integer_
             }
         }
     }
-    //struct arange *arange = target_arange;
+
     if(target_arange == NULL){
-        //printf("target_arange is NULL\n\n");
+        debug("target_arange is NULL\n\n");
         return -1;
     }
 
@@ -2748,18 +2641,16 @@ int lookup_by_address_in_dwarf(struct thin_macho *thin_macho, CORE_ADDR integer_
     struct dwarf2_per_cu_data *target_dwarf2_per_cu_data= NULL;
     for (i = 0; i < dwarf2_per_objfile->n_comp_units; i++){
         if (dwarf2_per_objfile->all_comp_units[i]->offset == target_arange->aranges_header.info_offset){
-            //printf("offset :0x%08lx\tlength: 0x%08lx\n", dwarf2_per_objfile->all_comp_units[i]->offset, dwarf2_per_objfile->all_comp_units[i]->length);
+            debug("offset :0x%08lx\tlength: 0x%08lx\n", dwarf2_per_objfile->all_comp_units[i]->offset, dwarf2_per_objfile->all_comp_units[i]->length);
             target_dwarf2_per_cu_data = dwarf2_per_objfile->all_comp_units[i];
             break;
         }
     }
     struct dwarf2_cu *target_cu = target_dwarf2_per_cu_data->cu;
-    //printf("compilation unit dir: %s\n", target_cu->comp_dir);
-
 
     struct die_info *target_die = find_target_subprogram(target_cu->dies, target_ard, integer_address);
     if(target_die == NULL){
-        //printf("Can not find target subprogram.\n");
+        debug("Can not find target subprogram.\n");
         return -1;
     }
     char *target_program_full_name = get_name_attribute(target_cu->dies);
@@ -2770,23 +2661,21 @@ int lookup_by_address_in_dwarf(struct thin_macho *thin_macho, CORE_ADDR integer_
         target_program_name = target_program_name +1;
     }
     char *target_subprogram_name = get_name_attribute(target_die);
-    //printf("target_program_full_name: %s\n", target_program_full_name);
-    //printf("target_program_name: %s\n", target_program_name);
-    //printf("target_subprogram_name: %s\n", target_subprogram_name);
 
-    //printf("Lookup address infomation\n");
+    //Lookup address infomation
     char flag;
     unsigned int offset = get_stmt_list_attribute(target_cu->dies, &flag);
     if(flag == 1){
         printf("do not have stmt_list attribute\n");
+        exit(-1);
     }else{
-        //printf("offset: 0x%08x\n", offset);
+        debug("offset: 0x%08x\n", offset);
     }
     struct line_header *lh = dwarf_decode_line_header (offset, target_cu);
     struct subfile * current_subfile = dwarf_decode_lines (lh, NULL, target_cu);
     //print_line_vector(current_subfile);
     int lineno = get_lineno_for_address(current_subfile, address);
-    //printf("lineno: %d\n",lineno);
+    debug("lineno: %d\n",lineno);
     printf("%s (in %s) (%s:%d)\n", target_subprogram_name, project_name, target_program_name, lineno);
     free_sub_file(current_subfile);
     free_line_header(lh);
@@ -3048,9 +2937,9 @@ int process_lc_segment(char *macho_str, long *offset, struct thin_macho*tm){
 
     memcpy(&command, macho_str + *offset, sizeof(struct segment_command));
     *offset += sizeof(struct segment_command);
-    if(strcmp(command.segname, "__TEXT") == 0){
-        doi.text_vmaddr = command.vmaddr;
-    }
+    //if(strcmp(command.segname, "__TEXT") == 0){
+    //    doi.text_vmaddr = command.vmaddr;
+    //}
     if(strcmp(command.segname, "__DWARF") == 0){
         tm->dwarf2_per_objfile = parse_dwarf_segment(macho_str, *offset, &command);
     }
@@ -3063,15 +2952,11 @@ int process_lc_segment_64(char *macho_str, long *offset, struct thin_macho*tm){
     struct segment_command_64 command = {0};
     memcpy(&command, macho_str + *offset, sizeof(struct segment_command_64));
     *offset += sizeof(struct segment_command_64);
-    if(strcmp(command.segname, "__TEXT") == 0){
-        //printf("__TEXT\n");
-        doi.text_vmaddr_64 = command.vmaddr;
-        //printf("%llx\n", command.vmaddr);
-    }
+    //if(strcmp(command.segname, "__TEXT") == 0){
+    //    doi.text_vmaddr_64 = command.vmaddr;
+    //}
     if(strcmp(command.segname, "__DWARF") == 0){
-        //printf("__DWARF\n");
         tm->dwarf2_per_objfile = parse_dwarf_segment_64(macho_str, *offset, &command);
-        //printf("end\n");
     }
     *offset += command.cmdsize - sizeof(struct segment_command_64); 
 
