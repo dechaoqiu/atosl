@@ -84,18 +84,14 @@ int main(int argc, char *argv[]){
         exit(-1);
     }
     thin_macho = tf->thin_machos[i];
-    #ifdef DEBUG
-        print_all_dwarf2_per_objfile(thin_macho->dwarf2_per_objfile);
-    #endif
+    //#ifdef DEBUG
+    //    print_all_dwarf2_per_objfile(thin_macho->dwarf2_per_objfile);
+    //#endif
 
     //dwarf2 file?
     if(thin_macho->dwarf2_per_objfile != NULL){
         parse_dwarf2_per_objfile(thin_macho->dwarf2_per_objfile);
     }
-    //else{
-    //    printf("atos: Can not find dwarf in macho.\n");
-    //    exit(-1);
-    //}
     
     #ifdef DEBUG
         print_thin_macho_aranges(thin_macho);
