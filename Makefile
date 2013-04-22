@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -c
+CFLAGS =  -Wall -c
 LDFLAGS = 
 OFLAG = -o
 LIBS = 
@@ -35,6 +35,7 @@ debug: CFLAGS += -g -DDEBUG
 debug: $(DEBUG_OBJECTS)
 	$(CC) $(OFLAG) $(DEBUG) $(DEBUG_OBJECTS)
 
+release: CFLAGS += -O2
 release: $(OBJECTS)
 	$(CC) $(OFLAG) $(EXECUTABLE) $(OBJECTS)
 
@@ -45,5 +46,6 @@ clean:
 
 install:
 	cp atos /usr/local/bin/atos
-	cp uuid_reader /usr/local/bin/uuid_reader
+	cp atos /opt/bin/atos
+	cp atos /home/web/Crab/env/bin/atos
 

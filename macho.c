@@ -52,31 +52,34 @@ CORE_ADDR read_signed_16(char *info_ptr){
     return ret;
 }
 
-signed int read_signed_32(unsigned char *info_ptr){
+signed int read_signed_32(char *info_ptr){
+    unsigned char * temp_ptr = (unsigned char *)info_ptr;
     signed int ret = 0;
-    ret = info_ptr[3];
-    ret = (ret << 8) + info_ptr[2];
-    ret = (ret << 8) + info_ptr[1];
-    ret = (ret << 8) + info_ptr[0];
+    ret = temp_ptr[3];
+    ret = (ret << 8) + temp_ptr[2];
+    ret = (ret << 8) + temp_ptr[1];
+    ret = (ret << 8) + temp_ptr[0];
     return ret;
 }
 
-int64_t read_signed_64(unsigned char *info_ptr){
+int64_t read_signed_64(char *info_ptr){
+    unsigned char * temp_ptr = (unsigned char *)info_ptr;
     int64_t ret = 0;
-    ret = info_ptr[7];
-    ret = (ret << 8) + info_ptr[6];
-    ret = (ret << 8) + info_ptr[5];
-    ret = (ret << 8) + info_ptr[4];
-    ret = (ret << 8) + info_ptr[3];
-    ret = (ret << 8) + info_ptr[2];
-    ret = (ret << 8) + info_ptr[1];
-    ret = (ret << 8) + info_ptr[0];
+    ret = temp_ptr[7];
+    ret = (ret << 8) + temp_ptr[6];
+    ret = (ret << 8) + temp_ptr[5];
+    ret = (ret << 8) + temp_ptr[4];
+    ret = (ret << 8) + temp_ptr[3];
+    ret = (ret << 8) + temp_ptr[2];
+    ret = (ret << 8) + temp_ptr[1];
+    ret = (ret << 8) + temp_ptr[0];
     return ret;
 }
 
-static unsigned int read_1_byte (unsigned char *info_ptr)
+static unsigned int read_1_byte (char *info_ptr)
 {
-    return *info_ptr;
+    unsigned char * temp_ptr = (unsigned char *)info_ptr;
+    return *temp_ptr;
 }
 
 static int read_1_signed_byte (char *buf)
@@ -86,61 +89,67 @@ static int read_1_signed_byte (char *buf)
     return ret;
 }
 
-static unsigned int read_2_bytes (unsigned char *info_ptr)
+static unsigned int read_2_bytes (char *info_ptr)
 {
     //read bytes little endian?
+    unsigned char * temp_ptr = (unsigned char *)info_ptr;
     unsigned short ret = 0;
-    ret = info_ptr[1];
-    ret = (ret << 8) + info_ptr[0];
+    ret = temp_ptr[1];
+    ret = (ret << 8) + temp_ptr[0];
     return ret;
 }
 
-static unsigned int read_4_bytes (unsigned char *info_ptr)
+static unsigned int read_4_bytes(char *info_ptr)
 {
+    unsigned char * temp_ptr = (unsigned char *)info_ptr;
     unsigned int ret = 0;
-    ret = info_ptr[3];
-    ret = (ret << 8) + info_ptr[2];
-    ret = (ret << 8) + info_ptr[1];
-    ret = (ret << 8) + info_ptr[0];
+    ret = temp_ptr[3];
+    ret = (ret << 8) + temp_ptr[2];
+    ret = (ret << 8) + temp_ptr[1];
+    ret = (ret << 8) + temp_ptr[0];
     return ret;
 }
 
-static unsigned long read_8_bytes (unsigned char *info_ptr)
+static unsigned long read_8_bytes (char *info_ptr)
 {
     //read bytes little endian?
+    unsigned char * temp_ptr = (unsigned char *)info_ptr;
     unsigned long ret = 0;
-    ret = info_ptr[7];
-    ret = (ret << 8) + info_ptr[6];
-    ret = (ret << 8) + info_ptr[5];
-    ret = (ret << 8) + info_ptr[4];
-    ret = (ret << 8) + info_ptr[3];
-    ret = (ret << 8) + info_ptr[2];
-    ret = (ret << 8) + info_ptr[1];
-    ret = (ret << 8) + info_ptr[0];
+    ret = temp_ptr[7];
+    ret = (ret << 8) + temp_ptr[6];
+    ret = (ret << 8) + temp_ptr[5];
+    ret = (ret << 8) + temp_ptr[4];
+    ret = (ret << 8) + temp_ptr[3];
+    ret = (ret << 8) + temp_ptr[2];
+    ret = (ret << 8) + temp_ptr[1];
+    ret = (ret << 8) + temp_ptr[0];
     return ret;
 }
 
-unsigned int read_unsigned_int(unsigned char *info_ptr){
+unsigned int read_unsigned_int(char *info_ptr){
     //read bytes little endian?
+    unsigned char * temp_ptr = (unsigned char *)info_ptr;
     unsigned int ret = 0;
-    ret = info_ptr[3];
-    ret = (ret << 8) + info_ptr[2];
-    ret = (ret << 8) + info_ptr[1];
-    ret = (ret << 8) + info_ptr[0];
+    ret = temp_ptr[3];
+    ret = (ret << 8) + temp_ptr[2];
+    ret = (ret << 8) + temp_ptr[1];
+    ret = (ret << 8) + temp_ptr[0];
     return ret;
 }
 
-unsigned short read_unsigned_short(unsigned char *info_ptr){
+unsigned short read_unsigned_short(char *info_ptr){
     //read bytes little endian?
+    unsigned char * temp_ptr = (unsigned char *)info_ptr;
     unsigned short ret = 0;
-    ret = info_ptr[1];
-    ret = (ret << 8) + info_ptr[0];
+    ret = temp_ptr[1];
+    ret = (ret << 8) + temp_ptr[0];
     return ret;
 }
 
-unsigned char read_unsigned_char(unsigned char *info_ptr){
+unsigned char read_unsigned_char(char *info_ptr){
+    unsigned char * temp_ptr = (unsigned char *)info_ptr;
     unsigned char ret = 0;
-    ret = info_ptr[0];
+    ret = temp_ptr[0];
     return ret;
 }
 
@@ -157,8 +166,9 @@ unsigned char read_unsigned_char(unsigned char *info_ptr){
 //    }
 //}
 //
-long long read_signed_leb128(unsigned char* leb128, unsigned int* leb128_length)
+long long read_signed_leb128(char* leb128_str, unsigned int* leb128_length)
 {
+    unsigned char * leb128 = (unsigned char * )leb128_str;
     signed long long number = 0;
     int sign = 0;
     signed long shift = 0;
@@ -191,13 +201,14 @@ long long read_signed_leb128(unsigned char* leb128, unsigned int* leb128_length)
 }
 
 
-unsigned long long read_unsigned_leb128(unsigned char* leb128, unsigned int* leb128_length)
+unsigned long long read_unsigned_leb128(char* leb128_str, unsigned int* leb128_length)
 {
     unsigned char byte;
     unsigned long word_number;
     unsigned long long number;
     signed long shift;
     signed long byte_length;
+    unsigned char * leb128 = (unsigned char * )leb128_str;
 
     /*  The following unrolls-the-loop for the first few bytes and
      *  unpacks into 32 bits to make this as fast as possible.
@@ -747,7 +758,7 @@ static struct subfile * dwarf_decode_lines (struct line_header *lh, char *comp_d
                             address = read_address_of_cu (line_ptr, cu, (int *) &bytes_read);
                             /* APPLE LOCAL: debug map */
                             {
-                                CORE_ADDR addr;
+                                //CORE_ADDR addr;
                                 //FIXME
                                 //if (translate_debug_map_address (cu, address, &addr, 0))
                                 //{
@@ -781,7 +792,7 @@ static struct subfile * dwarf_decode_lines (struct line_header *lh, char *comp_d
                             break;
                         default:
                             printf("mangled .debug_line section\n");
-                            return;
+                            return NULL;
                     }
                     break;
                 case DW_LNS_copy:
@@ -972,7 +983,7 @@ struct dwarf2_per_objfile* parse_dwarf_segment(char *macho_str, long offset,stru
 
     uint32_t i = 0;
     while(i < numofdwarfsections){
-        unsigned char *temp = malloc(dwarf_section_headers[i].size);
+        char *temp = malloc(dwarf_section_headers[i].size);
         if (temp == NULL){
             printf("Malloc Error!\n");
             exit(-1);
@@ -1055,7 +1066,7 @@ struct dwarf2_per_objfile* parse_dwarf_segment_64(char *macho_str, long offset,s
     uint32_t i = 0;
     while(i < numofdwarfsections){
         //FIXME more the size more 4G
-        unsigned char *temp = malloc((uint32_t)dwarf_section_headers[i].size);
+        char *temp = malloc((uint32_t)dwarf_section_headers[i].size);
         if (temp == NULL){
             printf("Malloc Error!\n");
             exit(-1);
@@ -1304,14 +1315,12 @@ static void free_die_list (struct die_info *dies)
         next = die->sibling;
 
         while(i < die->num_attrs){
-            switch(die->attrs[i].form){
-                case DW_FORM_block2:
-                case DW_FORM_block4:
-                case DW_FORM_block:
-                case DW_FORM_block1:
-                    free((die->attrs[i]).u.blk);
-                    break;
-            }
+            if ((die->attrs[i].form == DW_FORM_block2)
+             || (die->attrs[i].form == DW_FORM_block4)
+             || (die->attrs[i].form == DW_FORM_block)
+             || (die->attrs[i].form == DW_FORM_block1)){
+                 free((die->attrs[i]).u.blk);
+             }
             i++;
         }
         free (die->attrs);
@@ -1660,7 +1669,7 @@ int parse_macho(struct thin_macho*tm){
 
 /* Return a pointer to just past the end of an LEB128 number in BUF.  */
 
-unsigned int get_num_attr_spec_pair(unsigned char* info_ptr){
+unsigned int get_num_attr_spec_pair(char* info_ptr){
     unsigned int bytes_read = 0;
     unsigned int num_attr_spec_pair = 0;
     unsigned int attr_name_code = (unsigned int)read_unsigned_leb128(info_ptr, &bytes_read);
@@ -1698,7 +1707,7 @@ dwarf2_lookup_abbrev (unsigned int number, struct dwarf2_cu *cu)
     return NULL;
 }
 
-unsigned char * read_comp_unit_head (struct comp_unit_head *header, char *info_ptr)
+char * read_comp_unit_head (struct comp_unit_head *header, char *info_ptr)
 {
     header->addr_size = 4;
     header->offset_size = 4;
@@ -1749,7 +1758,7 @@ unsigned char * read_comp_unit_head (struct comp_unit_head *header, char *info_p
 //    return abbrev;
 //}
 
-static char * read_n_bytes (unsigned char *buf, unsigned int size)
+static char * read_n_bytes (char *buf, unsigned int size)
 {
     /* If the size of a host char is 8 bits, we can return a pointer
        to the buffer, otherwise we have to copy the data to a buffer
@@ -1962,10 +1971,11 @@ static struct die_info * dwarf_alloc_die ()
    child, sibling, and parent fields.  Set HAS_CHILDREN to tell
    whether the die has children or not.  */
 
-static char * read_full_die (struct die_info **diep, unsigned char *info_ptr,
+static char * read_full_die (struct die_info **diep, char *info_ptr,
         struct dwarf2_cu *cu, int *has_children)
 {
-    unsigned int abbrev_number, i, offset;
+    unsigned int abbrev_number, i;
+    //unsigned int offset;
     unsigned int bytes_read;
     struct abbrev_info *abbrev;
     struct die_info *die;
@@ -2232,9 +2242,9 @@ void parse_dwarf_abbrev(struct dwarf2_per_objfile *dwarf2_per_objfile){
     memset(dwarf2_abbrevs, 0, sizeof(struct abbrev_info *) * ABBREV_HASH_SIZE);
 
     dwarf2_per_objfile->dwarf2_abbrevs = dwarf2_abbrevs;
-    unsigned char * info_ptr = dwarf2_per_objfile->abbrev_buffer;
+    char * info_ptr = dwarf2_per_objfile->abbrev_buffer;
     int size = dwarf2_per_objfile->abbrev_size;
-    unsigned char* endof_abbrev_pos = info_ptr + size;
+    char* endof_abbrev_pos = info_ptr + size;
     int i = 0;
     while(info_ptr < endof_abbrev_pos && *info_ptr != '\0'){
         unsigned int bytes_read = 0;
@@ -2244,7 +2254,7 @@ void parse_dwarf_abbrev(struct dwarf2_per_objfile *dwarf2_per_objfile){
         unsigned long long entry_code = read_unsigned_leb128(info_ptr, &bytes_read);
         //printf("%llu\n", entry_code);
         info_ptr += bytes_read;
-        unsigned char has_children = *info_ptr;
+        unsigned char has_children = (unsigned char)*info_ptr;
         //printf("%u\n", has_children);
         info_ptr ++;
 
@@ -2603,11 +2613,12 @@ int lookup_by_address_in_dwarf(struct thin_macho *thin_macho, CORE_ADDR integer_
     unsigned int num = dwarf2_per_objfile->n_aranges;
     struct arange **all_aranges = dwarf2_per_objfile->all_aranges; 
     struct arange *target_arange = NULL;
-    struct address_range_descriptor *target_ard;
+    struct address_range_descriptor *target_ard = NULL;
     unsigned int i = 0, j = 0;
     for(i = 0; i< num; i++){
         struct arange *arange = all_aranges[i];
         for(j = 0; j < arange->num_of_ards; j++){
+            //debug
             CORE_ADDR beginning_addr = arange->address_range_descriptors[j].beginning_addr;
             CORE_ADDR ending_addr = arange->address_range_descriptors[j].beginning_addr + arange->address_range_descriptors[j].length;
             //printf("0x%016llx + 0x%016llx = 0x%016llx\n", arange->address_range_descriptors[j].beginning_addr, arange->address_range_descriptors[j].length, arange->address_range_descriptors[j].beginning_addr + arange->address_range_descriptors[j].length);
@@ -2621,6 +2632,11 @@ int lookup_by_address_in_dwarf(struct thin_macho *thin_macho, CORE_ADDR integer_
 
     if(target_arange == NULL){
         debug("target_arange is NULL\n\n");
+        return -1;
+    }
+
+    if(target_ard == NULL){
+        debug("target_ard is NULL\n\n");
         return -1;
     }
 
