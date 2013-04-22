@@ -32,7 +32,6 @@ int lookup_by_address(struct thin_macho *thin_macho, CORE_ADDR integer_address){
 }
 
 void numeric_to_symbols(struct thin_macho *thin_macho, const char **addresses, int numofaddresses){
-    char *address_info = NULL;
     int i = 0;
     const char *address = NULL;
     CORE_ADDR integer_address = 0;

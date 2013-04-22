@@ -138,25 +138,25 @@ unsigned short read_unsigned_short(unsigned char *info_ptr){
     return ret;
 }
 
-read_unsigned_char(unsigned char *info_ptr){
+unsigned char read_unsigned_char(unsigned char *info_ptr){
     unsigned char ret = 0;
     ret = info_ptr[0];
     return ret;
 }
 
-static char * skip_leb128 (unsigned char *buf)
-{
-    int byte;
-
-    while (1)
-    {
-        byte = *buf;
-        buf++;
-        if ((byte & 128) == 0)
-            return buf;
-    }
-}
-
+//static char * skip_leb128 (unsigned char *buf)
+//{
+//    int byte;
+//
+//    while (1)
+//    {
+//        byte = *buf;
+//        buf++;
+//        if ((byte & 128) == 0)
+//            return buf;
+//    }
+//}
+//
 long long read_signed_leb128(unsigned char* leb128, unsigned int* leb128_length)
 {
     signed long long number = 0;
@@ -863,51 +863,51 @@ static struct subfile * dwarf_decode_lines (struct line_header *lh, char *comp_d
     return current_subfile;
 }
 
-static void set_cu_language (unsigned int lang, struct dwarf2_cu *cu)
-{
-    switch (lang)
-    {
-        case DW_LANG_C89:
-        case DW_LANG_C:
-            cu->language = language_c;
-            break;
-        case DW_LANG_C_plus_plus:
-            cu->language = language_cplus;
-            break;
-        case DW_LANG_Fortran77:
-        case DW_LANG_Fortran90:
-        case DW_LANG_Fortran95:
-            cu->language = language_fortran;
-            break;
-        case DW_LANG_Mips_Assembler:
-            cu->language = language_asm;
-            break;
-        case DW_LANG_Java:
-            cu->language = language_java;
-            break;
-        case DW_LANG_Ada83:
-        case DW_LANG_Ada95:
-            cu->language = language_ada;
-            break;
-            /* APPLE LOCAL:  No need to be Apple local but not merged in to FSF..  */
-        case DW_LANG_ObjC:
-            cu->language = language_objc;
-            break;
-            /* APPLE LOCAL:  No need to be Apple local but not merged in to FSF..  */
-        case DW_LANG_ObjC_plus_plus:
-            cu->language = language_objcplus;
-            break;
-        case DW_LANG_Cobol74:
-        case DW_LANG_Cobol85:
-        case DW_LANG_Pascal83:
-        case DW_LANG_Modula2:
-        default:
-            cu->language = language_minimal;
-            break;
-    }
-    //cu->language_defn = language_def (cu->language);
-}
-
+//static void set_cu_language (unsigned int lang, struct dwarf2_cu *cu)
+//{
+//    switch (lang)
+//    {
+//        case DW_LANG_C89:
+//        case DW_LANG_C:
+//            cu->language = language_c;
+//            break;
+//        case DW_LANG_C_plus_plus:
+//            cu->language = language_cplus;
+//            break;
+//        case DW_LANG_Fortran77:
+//        case DW_LANG_Fortran90:
+//        case DW_LANG_Fortran95:
+//            cu->language = language_fortran;
+//            break;
+//        case DW_LANG_Mips_Assembler:
+//            cu->language = language_asm;
+//            break;
+//        case DW_LANG_Java:
+//            cu->language = language_java;
+//            break;
+//        case DW_LANG_Ada83:
+//        case DW_LANG_Ada95:
+//            cu->language = language_ada;
+//            break;
+//            /* APPLE LOCAL:  No need to be Apple local but not merged in to FSF..  */
+//        case DW_LANG_ObjC:
+//            cu->language = language_objc;
+//            break;
+//            /* APPLE LOCAL:  No need to be Apple local but not merged in to FSF..  */
+//        case DW_LANG_ObjC_plus_plus:
+//            cu->language = language_objcplus;
+//            break;
+//        case DW_LANG_Cobol74:
+//        case DW_LANG_Cobol85:
+//        case DW_LANG_Pascal83:
+//        case DW_LANG_Modula2:
+//        default:
+//            cu->language = language_minimal;
+//            break;
+//    }
+//    //cu->language_defn = language_def (cu->language);
+//}
+//
 void free_dwarf2_per_objfile(struct dwarf2_per_objfile *dwarf2_per_objfile){
     if(dwarf2_per_objfile->info_buffer){
         free(dwarf2_per_objfile->info_buffer); 
@@ -1700,10 +1700,6 @@ dwarf2_lookup_abbrev (unsigned int number, struct dwarf2_cu *cu)
 
 unsigned char * read_comp_unit_head (struct comp_unit_head *header, char *info_ptr)
 {
-    char *beg_of_comp_unit = info_ptr;
-    //  struct comp_unit_head *cuh = malloc(sizeof(struct comp_unit_head));
-    //  memset(cuh, '\0', sizeof(struct comp_unit_head));
-
     header->addr_size = 4;
     header->offset_size = 4;
     unsigned int cu_head_length = read_unsigned_int(info_ptr);
@@ -1733,25 +1729,25 @@ unsigned char * read_comp_unit_head (struct comp_unit_head *header, char *info_p
    an empty DIE).  In either case *BYTES_READ will be set to the length of
    the initial number.  */
 
-static struct abbrev_info * peek_die_abbrev (char *info_ptr, unsigned int *bytes_read, struct dwarf2_cu *cu)
-{
-    unsigned int abbrev_number;
-    struct abbrev_info *abbrev;
-
-    abbrev_number = (unsigned int)read_unsigned_leb128(info_ptr, bytes_read);
-    printf("%u\n", abbrev_number);
-
-    if (abbrev_number == 0)
-        return NULL;
-
-    abbrev = dwarf2_lookup_abbrev (abbrev_number, cu);
-    if (!abbrev)
-    {
-        printf("Dwarf Error: Could not find abbrev number %d\n", abbrev_number);
-    }
-
-    return abbrev;
-}
+//static struct abbrev_info * peek_die_abbrev (char *info_ptr, unsigned int *bytes_read, struct dwarf2_cu *cu)
+//{
+//    unsigned int abbrev_number;
+//    struct abbrev_info *abbrev;
+//
+//    abbrev_number = (unsigned int)read_unsigned_leb128(info_ptr, bytes_read);
+//    printf("%u\n", abbrev_number);
+//
+//    if (abbrev_number == 0)
+//        return NULL;
+//
+//    abbrev = dwarf2_lookup_abbrev (abbrev_number, cu);
+//    if (!abbrev)
+//    {
+//        printf("Dwarf Error: Could not find abbrev number %d\n", abbrev_number);
+//    }
+//
+//    return abbrev;
+//}
 
 static char * read_n_bytes (unsigned char *buf, unsigned int size)
 {
@@ -2110,7 +2106,8 @@ static struct dwarf2_cu * load_full_comp_unit (struct dwarf2_per_objfile *dwarf2
     unsigned long offset;
     char *info_ptr;
     //`struct cleanup *back_to, *free_cu_cleanup;
-    struct attribute *attr;
+    //TODO ADD TARGET LANGUAGE
+    //struct attribute *attr;
     /* APPLE LOCAL avoid unused var warning. */
     /* CORE_ADDR baseaddr; */
 
@@ -2194,8 +2191,6 @@ static void create_all_comp_units(struct dwarf2_per_objfile *dwarf2_per_objfile)
     while (info_ptr < dwarf2_per_objfile->info_buffer + dwarf2_per_objfile->info_size)
     {
         struct comp_unit_head cu_header;
-        /* APPLE LOCAL avoid unused var warning.  */
-        /* char *beg_of_comp_unit; */
         struct dwarf2_per_cu_data *this_cu;
         unsigned long offset;
         int bytes_read;
@@ -2242,7 +2237,6 @@ void parse_dwarf_abbrev(struct dwarf2_per_objfile *dwarf2_per_objfile){
     unsigned char* endof_abbrev_pos = info_ptr + size;
     int i = 0;
     while(info_ptr < endof_abbrev_pos && *info_ptr != '\0'){
-        unsigned char temp = 0;
         unsigned int bytes_read = 0;
         unsigned long long abbrev_code = read_unsigned_leb128(info_ptr, &bytes_read);
         //printf("%llu %u\n", abbrev_code, bytes_read);
@@ -2365,8 +2359,6 @@ static void parse_dwarf_aranges(struct dwarf2_per_objfile *dwarf2_per_objfile)
     while (aranges_ptr < dwarf2_per_objfile->aranges_buffer+ dwarf2_per_objfile->aranges_size)
     {
         //struct aranges_header aranges_header;
-        //    /* APPLE LOCAL avoid unused var warning.  */
-        //    /* char *beg_of_comp_unit; */
         //    struct dwarf2_per_cu_data *this_cu;
         unsigned long offset;
         int bytes_read;
@@ -2407,11 +2399,7 @@ static void parse_dwarf_aranges(struct dwarf2_per_objfile *dwarf2_per_objfile)
         arange->address_range_descriptors = malloc(num_of_ards * sizeof(struct address_range_descriptor));
         assert(arange->address_range_descriptors != NULL);
         memset(arange->address_range_descriptors, 0, num_of_ards * sizeof(struct address_range_descriptor));
-        struct address_range_descriptor *address_range_descriptors;
-        //
         //struct address_range_descriptor ard
-        CORE_ADDR beginning_addr = 0;
-        unsigned int length = 0;
         int i = 0;
         int aranges_header_addr_size = 0;
         for(i = 0; i < num_of_ards; i++){
@@ -2559,7 +2547,6 @@ void print_thin_macho_aranges(struct thin_macho *thin_macho){
     struct dwarf2_per_objfile* dwarf2_per_objfile = thin_macho->dwarf2_per_objfile;
     unsigned int num = dwarf2_per_objfile->n_aranges;
     struct arange **all_aranges = dwarf2_per_objfile->all_aranges; 
-    struct address_range_descriptor *target_ard;
 
     unsigned int i = 0, j = 0;
     for(i = 0; i< num; i++){
@@ -2716,6 +2703,7 @@ int parse_dwarf2_per_objfile(struct dwarf2_per_objfile *dwarf2_per_objfile){
     parse_dwarf_abbrev(dwarf2_per_objfile);
     parse_dwarf_info(dwarf2_per_objfile);
     parse_dwarf_aranges(dwarf2_per_objfile);
+    return 0;
 }
 
 int parse_load_command(char *macho_str, long *offset, struct load_command *lc, struct thin_macho*tm){
@@ -2859,6 +2847,7 @@ int parse_load_command(char *macho_str, long *offset, struct load_command *lc, s
             printf("unknown load commmand type, ignoring...\n");
 
     }
+    return 0;
 }
 
 int process_lc_source_version(char *macho_str, long *offset){

@@ -525,6 +525,9 @@ struct target_file{
     uint32_t numofarchs;
 };
 int select_thin_macho_by_arch(struct target_file *tf, const char *arch);
+void print_thin_macho_aranges(struct thin_macho *thin_macho);
+int parse_load_command(char *macho_str, long *offset, struct load_command *lc, struct thin_macho*tm);
+void print_all_dwarf2_per_objfile(struct dwarf2_per_objfile *dwarf2_per_objfile);
 void get_uuid_of_thin(struct thin_macho*thin_macho, char *uuid);
 void free_target_file(struct target_file *tf);
 int lookup_by_address_in_dwarf(struct thin_macho *thin_macho, CORE_ADDR integer_address);
@@ -534,6 +537,8 @@ int parse_universal(FILE *fp, uint32_t magic_number, struct target_file *tf);
 int parse_normal(FILE *fp, uint32_t magic_number, struct target_file *tf);
 struct target_file *parse_file(const char *filename);
 int parse_macho(struct thin_macho*thin_macho);
+int parse_dwarf2_per_objfile(struct dwarf2_per_objfile *dwarf2_per_objfile);
+int process_lc_command(char *macho_str, long *offset);
 int process_lc_dyld_info(char *macho_str, long *offset);
 int process_lc_dyld_info_only(char *macho_str, long *offset);
 int process_lc_version_min_iphoneos(char *macho_str, long *offset);
