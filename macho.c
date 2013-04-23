@@ -689,9 +689,9 @@ static struct subfile * dwarf_decode_lines (struct line_header *lh, char *comp_d
         CORE_ADDR address = 0;
         unsigned int file = 1;
         unsigned int line = 1;
-        unsigned int column = 0;
+        //unsigned int column = 0;
         int is_stmt = lh->default_is_stmt;
-        int basic_block = 0;
+        //int basic_block = 0;
         int end_sequence = 0;
 
         //if (!decode_for_pst_p && lh->num_file_names >= file)
@@ -733,7 +733,7 @@ static struct subfile * dwarf_decode_lines (struct line_header *lh, char *comp_d
                     //record_line (current_subfile, line, check_cu_functions (address, cu));
                     record_line (current_subfile, line, address);
                 }
-                basic_block = 1;
+                //basic_block = 1;
             }
             else switch (op_code)
             {
@@ -801,7 +801,7 @@ static struct subfile * dwarf_decode_lines (struct line_header *lh, char *comp_d
                     if (!decode_for_pst_p && record_linetable_entry)
                         //                        record_line (current_subfile, line, check_cu_functions (address, cu));
                         record_line (current_subfile, line, address);
-                    basic_block = 0;
+                    //basic_block = 0;
                     break;
                 case DW_LNS_advance_pc:
                     address += lh->minimum_instruction_length
@@ -817,16 +817,17 @@ static struct subfile * dwarf_decode_lines (struct line_header *lh, char *comp_d
                         /* The arrays lh->include_dirs and lh->file_names are
                            0-based, but the directory and file name numbers in
                            the statement program are 1-based.  */
-                        struct file_entry *fe;
-                        char *dir;
 
                         file = read_unsigned_leb128 (line_ptr, &bytes_read);
                         line_ptr += bytes_read;
-                        fe = &lh->file_names[file - 1];
-                        if (fe->dir_index)
-                            dir = lh->include_dirs[fe->dir_index - 1];
-                        else
-                            dir = comp_dir;
+
+                        //struct file_entry *fe;
+                        //fe = &lh->file_names[file - 1];
+                        //char *dir = NULL;
+                        //if (fe->dir_index)
+                        //    dir = lh->include_dirs[fe->dir_index - 1];
+                        //else
+                        //    dir = comp_dir;
                         /* APPLE LOCAL: Pass in the compilation dir of this CU.  */
                         //FIXME
                         //if (!decode_for_pst_p)
@@ -834,14 +835,15 @@ static struct subfile * dwarf_decode_lines (struct line_header *lh, char *comp_d
                     }
                     break;
                 case DW_LNS_set_column:
-                    column = read_unsigned_leb128 (line_ptr, &bytes_read);
+                    //column = read_unsigned_leb128 (line_ptr, &bytes_read);
+                    read_unsigned_leb128 (line_ptr, &bytes_read);
                     line_ptr += bytes_read;
                     break;
                 case DW_LNS_negate_stmt:
                     is_stmt = (!is_stmt);
                     break;
                 case DW_LNS_set_basic_block:
-                    basic_block = 1;
+                    //basic_block = 1;
                     break;
                     /* Add to the address register of the state machine the
                        address increment value corresponding to special opcode
@@ -2107,7 +2109,8 @@ static struct die_info * read_die_and_siblings (char *info_ptr, struct dwarf2_cu
 /* Load the DIEs associated with PST and PER_CU into memory.  */
 /* APPLE LOCAL debug map: Accept an optional 2nd parameter ADDR_MAP */
 
-static struct dwarf2_cu * load_full_comp_unit (struct dwarf2_per_objfile *dwarf2_per_objfile, int i)
+//static struct dwarf2_cu * load_full_comp_unit (struct dwarf2_per_objfile *dwarf2_per_objfile, int i)
+static void load_full_comp_unit (struct dwarf2_per_objfile *dwarf2_per_objfile, int i)
 {
     struct dwarf2_per_cu_data *per_cu = dwarf2_per_objfile->all_comp_units[i];
     //struct partial_symtab *pst = per_cu->psymtab;
@@ -2175,7 +2178,7 @@ static struct dwarf2_cu * load_full_comp_unit (struct dwarf2_per_objfile *dwarf2
        clean it up when finished with it.  */
     //discard_cleanups (free_cu_cleanup);
 
-    return cu;
+    //return cu;
 }
 
 /* Generate full symbol information for PST and CU, whose DIEs have
@@ -2305,9 +2308,9 @@ void parse_dwarf_abbrev(struct dwarf2_per_objfile *dwarf2_per_objfile){
 void parse_dwarf_info(struct dwarf2_per_objfile *dwarf2_per_objfile){
     create_all_comp_units(dwarf2_per_objfile);
     int i = 0;
-    struct dwarf2_cu *temp = NULL;
+//    struct dwarf2_cu *temp = NULL;
     for (i = 0; i< dwarf2_per_objfile->n_comp_units; i++){
-        temp = load_full_comp_unit(dwarf2_per_objfile, i);
+        load_full_comp_unit(dwarf2_per_objfile, i);
     }
 }
 
@@ -2370,10 +2373,10 @@ static void parse_dwarf_aranges(struct dwarf2_per_objfile *dwarf2_per_objfile)
     {
         //struct aranges_header aranges_header;
         //    struct dwarf2_per_cu_data *this_cu;
-        unsigned long offset;
+        //unsigned long offset;
         int bytes_read;
 
-        offset = aranges_ptr - dwarf2_per_objfile->aranges_buffer;
+        //offset = aranges_ptr - dwarf2_per_objfile->aranges_buffer;
 
         //    /* Read just enough information to find out where the next
         //       compilation unit is.  */
@@ -2527,6 +2530,7 @@ unsigned int get_stmt_list_attribute(struct die_info *die, char *flag){
     unsigned int i = 0;
     for(i = 0; i < die->num_attrs; i++){
         if (die->attrs[i].name == DW_AT_stmt_list){
+            *flag = 0;
             return die->attrs[i].u.addr;
         }
     }
@@ -2666,7 +2670,7 @@ int lookup_by_address_in_dwarf(struct thin_macho *thin_macho, CORE_ADDR integer_
     char *target_subprogram_name = get_name_attribute(target_die);
 
     //Lookup address infomation
-    char flag;
+    char flag = 0;
     unsigned int offset = get_stmt_list_attribute(target_cu->dies, &flag);
     if(flag == 1){
         printf("do not have stmt_list attribute\n");
