@@ -74,7 +74,9 @@ int main(int argc, char *argv[]){
     int numofaddresses = argc - 5;
     char **numeric_addresses = argv + 5;
     struct target_file *tf = NULL;
+    debug("about to parse file.");
     tf = parse_file(full_filename);
+    debug("parse file finished.");
 
     struct thin_macho *thin_macho = NULL;
     //performance
@@ -89,14 +91,19 @@ int main(int argc, char *argv[]){
     //#endif
 
     //dwarf2 file?
+
+    debug("thin_macho->dwarf2_per_objfile: %p.", thin_macho->dwarf2_per_objfile);
     if(thin_macho->dwarf2_per_objfile != NULL){
+        debug("about to parse dwarf2 objfile.");
         parse_dwarf2_per_objfile(thin_macho->dwarf2_per_objfile);
+        debug("parse dwarf2 objfile failed.");
     }
     
     #ifdef DEBUG
         print_thin_macho_aranges(thin_macho);
     #endif
     
+    debug("about to invoke numeric_to_symbols.");
     numeric_to_symbols(thin_macho, (const char **)numeric_addresses, numofaddresses);
     free_target_file(tf);
     return 0;

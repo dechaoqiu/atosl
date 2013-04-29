@@ -1690,7 +1690,7 @@ unsigned int get_num_attr_spec_pair(char* info_ptr){
 
 /* Lookup an abbrev_info structure in the abbrev hash table.  */
 
-    static struct abbrev_info *
+static struct abbrev_info *
 dwarf2_lookup_abbrev (unsigned int number, struct dwarf2_cu *cu)
 {
     unsigned int hash_number;
@@ -2284,7 +2284,7 @@ void parse_dwarf_abbrev(struct dwarf2_per_objfile *dwarf2_per_objfile){
             while(attr_name_code != 0 || attr_form_code != 0){
                 attrs[j].name = attr_name_code;
                 attrs[j].form = attr_form_code;
-                //printf("%s %s\n", dwarf_attr_name(attrs[j].name), dwarf_form_name(attrs[j].form));
+                debug("%s %s\n", dwarf_attr_name(attrs[j].name), dwarf_form_name(attrs[j].form));
                 attr_name_code = (unsigned int)read_unsigned_leb128(info_ptr ,&bytes_read);
                 info_ptr += bytes_read;
                 attr_form_code = (unsigned int)read_unsigned_leb128(info_ptr ,&bytes_read);
@@ -2297,12 +2297,13 @@ void parse_dwarf_abbrev(struct dwarf2_per_objfile *dwarf2_per_objfile){
             ai->attrs = NULL;
         }
         struct abbrev_info **temp_abbr = &dwarf2_abbrevs[ai->number % ABBREV_HASH_SIZE];
-        while(*temp_abbr != NULL){
-            *temp_abbr = (*temp_abbr)->next;
+        while(*temp_abbr){
+            temp_abbr = &(*temp_abbr)->next;
         }
         *temp_abbr = ai;
         i++;
     }
+    debug("parse dwarf2_per_objfile finished.");
 }
 
 void parse_dwarf_info(struct dwarf2_per_objfile *dwarf2_per_objfile){
@@ -2720,8 +2721,11 @@ void parse_lc_symtab(char *macho_str, struct symtab_command *command, struct thi
 }
 
 int parse_dwarf2_per_objfile(struct dwarf2_per_objfile *dwarf2_per_objfile){
+    debug("about to parse_dwarf_abbrev");
     parse_dwarf_abbrev(dwarf2_per_objfile);
+    debug("about to parse_dwarf_info");
     parse_dwarf_info(dwarf2_per_objfile);
+    debug("about to parse_dwarf_aranges");
     parse_dwarf_aranges(dwarf2_per_objfile);
     return 0;
 }
