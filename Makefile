@@ -41,11 +41,12 @@ release: $(OBJECTS)
 
 uuid: $(OBJECTS) uuid_reader.o
 	$(CC) $(OFLAG) uuid_reader macho.o converter.o uuid_reader.o
+
 clean:
 	rm -rf $(EXECUTABLE) $(DEBUG) *.o
-
 install:
 	cp atos /usr/local/bin/atos
 	cp atos /opt/bin/atos
 	cp atos /home/web/Crab/env/bin/atos
 
+.PHONY: install clean
