@@ -10,7 +10,7 @@ DEBUG = debug_atos
 
 all: release debug
 
-main.o: main.c macho.h
+main.o: main.c macho.h main.h
 	$(CC) $(CFLAGS) main.c $(OFLAG) main.o
 
 converter.o: converter.c converter.h

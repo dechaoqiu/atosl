@@ -20,7 +20,7 @@
 
 extern char *project_name;
 
-int lookup_by_address(struct thin_macho *thin_macho, CORE_ADDR integer_address){
+static int lookup_by_address(struct thin_macho *thin_macho, CORE_ADDR integer_address){
     int result = -1;
     if(thin_macho->dwarf2_per_objfile != NULL){
         result = lookup_by_address_in_dwarf(thin_macho, integer_address); 
@@ -31,7 +31,7 @@ int lookup_by_address(struct thin_macho *thin_macho, CORE_ADDR integer_address){
     return result;
 }
 
-void numeric_to_symbols(struct thin_macho *thin_macho, const char **addresses, int numofaddresses){
+static void numeric_to_symbols(struct thin_macho *thin_macho, const char **addresses, int numofaddresses){
     int i = 0;
     const char *address = NULL;
     CORE_ADDR integer_address = 0;
@@ -51,40 +51,35 @@ void numeric_to_symbols(struct thin_macho *thin_macho, const char **addresses, i
     }
 }
 
-int symbolicate(const char* arch, const char *executable, char *addresses[]){
-    printf("in symbolicate arch: %s executable: %s\n", arch, executable);
-}
-
-int wrapper_main(int argc, char *argv[]){
-    if (argc < 6){
-        printf("usage:  atos -arch architecture -o executable [address ...]\n");
-        exit(-1);
-    }
-    assert(strcmp(argv[1], "-arch") == 0);
-
-    char *arch = argv[2];
-
-    assert(strcmp(argv[3], "-o") == 0);
-
-    char *full_filename = argv[4];
+static void set_project_name(const char* full_filename){
     char *filename = strrchr(full_filename, '/');
     if(filename == NULL){
-        filename = full_filename;
+        filename = (char *)full_filename;
     }else{
         filename = filename + 1;
     }
     project_name = filename;
-    
-    int numofaddresses = argc - 5;
-    char **numeric_addresses = argv + 5;
+}
+
+
+int symbolicate(const char* arch, const char *executable, char *addresses[], int numofaddresses){
+    debug("in symbolicate arch: %s executable: %s\n", arch, executable);
+    int i = 0;
+    for(; i < numofaddresses; i++){
+        debug("address%d: %s\n", i, addresses[i]);
+    }
+
+    set_project_name(executable);
+
     struct target_file *tf = NULL;
     debug("about to parse file.");
-    tf = parse_file(full_filename);
+    tf = parse_file(executable);
     debug("parse file finished.");
 
     struct thin_macho *thin_macho = NULL;
     //performance
-    int i = select_thin_macho_by_arch(tf, arch);
+    i = 0;
+    i = select_thin_macho_by_arch(tf, arch);
     if(i == -1){
         printf("atos: Can not find macho for architecture: %s.\n", arch);
         exit(-1);
@@ -108,8 +103,25 @@ int wrapper_main(int argc, char *argv[]){
     #endif
     
     debug("about to invoke numeric_to_symbols.");
-    numeric_to_symbols(thin_macho, (const char **)numeric_addresses, numofaddresses);
+    numeric_to_symbols(thin_macho, (const char **)addresses, numofaddresses);
     free_target_file(tf);
     return 0;
+}
+
+int main(int argc, char *argv[]){
+    if (argc < 6){
+        printf("usage:  atos -arch architecture -o executable [address ...]\n");
+        exit(-1);
+    }
+    assert(strcmp(argv[1], "-arch") == 0);
+    char *arch = argv[2];
+    assert(strcmp(argv[3], "-o") == 0);
+
+    char *executable = argv[4];
+
+    int numofaddresses = argc - 5;
+    char **addresses = argv + 5;
+    int result = symbolicate(arch, executable, addresses, numofaddresses);
+    return result;
 }
 

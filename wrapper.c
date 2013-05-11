@@ -18,38 +18,52 @@
 
 
 #include <Python.h>
+#include "main.h"
 
 static PyObject *
 symbolicate_wrapper(PyObject *self, PyObject *args)
 {
-    const char *arch, *executable, *addresses_str;
-    int sts;
-    char **addresses;
+    const char *arch, *executable;
+    int result;
 
-    int num_addresses;
+    int numofaddresses;
+    PyObject* addresses_obj;
 
-    if (!PyArg_ParseTuple(args, "sss#", &arch, &executable, &addresses_str, &numofaddresses))
+    if (!PyArg_ParseTuple(args, "ssO", &arch, &executable, &addresses_obj))
         return NULL;
+            //|| !PyTuple_Check(addresses_obj))
 
-    char *temp = addresses_str;
-    while(*temp != '\0'){
-        if (*temp == ' '){
-            *temp = '\0';
-        }
-        temp ++;
-        addresses_str[i] = ;
-    }
-    addresses = malloc(sizeof(char *) * num_addresses);
+    numofaddresses = PyTuple_Size(addresses_obj);
+    //printf("numofaddresses: %d\n", numofaddresses);
+    //unsigned int *addresses;
+    //addresses = (int *) malloc(sizeof(unsigned int)*numofaddresses);
+    char **addresses;
+    addresses = malloc(sizeof(char *)*numofaddresses);
     int i = 0;
-    while(i < num_addresses){
-        addresses[i] = ;
-        i++;
+    PyObject *address_item;
+    for (; i < numofaddresses; i++){
+        address_item = PyTuple_GetItem(addresses_obj, i);
+        if (PyString_Check(address_item)){
+            addresses[i] = PyString_AsString(address_item);
+            //printf("%s\n", addresses[i]);
+        }else{
+            //printf("Error: tuple contains a non-string value");
+            exit(1);
+        }
+        //if (PyInt_Check(address_item)){
+        //    addresses[i] = (unsigned int)PyInt_AsLong(address_item);
+        //    printf("%d\n", addresses[i]);
+        //}else{
+        //    printf("Error: tuple contains a non-int value");
+        //    exit(1);
+        //}
     }
-    addresses[]
-    sts = symbolicate(arch, executable, NULL);
+
+    result = symbolicate(arch, executable, addresses, numofaddresses);
 
     free(addresses);
-    return Py_BuildValue("i", sts);
+    //printf("end\n");
+    return Py_BuildValue("i", result);
 }
 //static PyObject *
 //symbolicate_wrapper(PyObject *self, PyObject *args)
@@ -58,7 +72,7 @@ symbolicate_wrapper(PyObject *self, PyObject *args)
 //    int sts;
 //    char **addresses;
 //
-//    int num_addresses;
+//    int numofaddresses;
 //
 //    if (!PyArg_ParseTuple(args, "sss#", &arch, &executable, &addresses_str, &numofaddresses))
 //        return NULL;
@@ -71,9 +85,9 @@ symbolicate_wrapper(PyObject *self, PyObject *args)
 //        temp ++;
 //        addresses_str[i] = ;
 //    }
-//    addresses = malloc(sizeof(char *) * num_addresses);
+//    addresses = malloc(sizeof(char *) * numofaddresses);
 //    int i = 0;
-//    while(i < num_addresses){
+//    while(i < numofaddresses){
 //        addresses[i] = ;
 //        i++;
 //    }
