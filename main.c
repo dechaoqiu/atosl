@@ -51,7 +51,11 @@ void numeric_to_symbols(struct thin_macho *thin_macho, const char **addresses, i
     }
 }
 
-int main(int argc, char *argv[]){
+int symbolicate(const char* arch, const char *executable, char *addresses[]){
+    printf("in symbolicate arch: %s executable: %s\n", arch, executable);
+}
+
+int wrapper_main(int argc, char *argv[]){
     if (argc < 6){
         printf("usage:  atos -arch architecture -o executable [address ...]\n");
         exit(-1);
