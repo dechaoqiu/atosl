@@ -15,8 +15,8 @@
  *
  * =====================================================================================
  */
-#include <stdio.h>
 #include "macho.h"
+#include <stdio.h>
 
 extern char *project_name;
 
@@ -64,38 +64,32 @@ static void set_project_name(const char* full_filename){
 
 int symbolicate(const char* arch, const char *executable, char *addresses[], int numofaddresses){
     debug("in symbolicate arch: %s executable: %s\n", arch, executable);
-    int i = 0;
-    for(; i < numofaddresses; i++){
-        debug("address%d: %s\n", i, addresses[i]);
-    }
-
     set_project_name(executable);
-
-    struct target_file *tf = NULL;
     debug("about to parse file.");
-    tf = parse_file(executable);
+    struct target_file *tf = parse_file(executable);
+    if (tf == NULL){
+        debug("parse target file error.");
+        return -1;
+    }
     debug("parse file finished.");
 
     struct thin_macho *thin_macho = NULL;
-    //performance
-    i = 0;
-    i = select_thin_macho_by_arch(tf, arch);
+    //FIXME about performance
+    int i = select_thin_macho_by_arch(tf, arch);
     if(i == -1){
         printf("atos: Can not find macho for architecture: %s.\n", arch);
-        exit(-1);
+        return -1;
     }
     thin_macho = tf->thin_machos[i];
     //#ifdef DEBUG
     //    print_all_dwarf2_per_objfile(thin_macho->dwarf2_per_objfile);
     //#endif
 
-    //dwarf2 file?
-
     debug("thin_macho->dwarf2_per_objfile: %p.", thin_macho->dwarf2_per_objfile);
     if(thin_macho->dwarf2_per_objfile != NULL){
         debug("about to parse dwarf2 objfile.");
         parse_dwarf2_per_objfile(thin_macho->dwarf2_per_objfile);
-        debug("parse dwarf2 objfile failed.");
+        debug("parse dwarf2 objfile finished.");
     }
     
     #ifdef DEBUG

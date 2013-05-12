@@ -1,5 +1,6 @@
 #ifndef MACHO_H
 #define MACHO_H
+#include "wrapper.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -136,6 +137,12 @@ struct aranges_header
     unsigned char addr_size;	/* byte size of an address */
     unsigned char seg_size;	/* byte size of segment descriptor */
 } ;
+
+struct address_range_descriptor{
+    CORE_ADDR beginning_addr;
+    //uint64_t length;
+    unsigned int length;
+};
 
 struct arange{
     struct aranges_header aranges_header;

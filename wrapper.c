@@ -17,9 +17,9 @@
  */
 
 
-#include <Python.h>
-#include "main.h"
+#include "wrapper.h"
 
+PyObject *ATOSError;
 static PyObject *
 symbolicate_wrapper(PyObject *self, PyObject *args)
 {
@@ -29,14 +29,11 @@ symbolicate_wrapper(PyObject *self, PyObject *args)
     int numofaddresses;
     PyObject* addresses_obj;
 
-    if (!PyArg_ParseTuple(args, "ssO", &arch, &executable, &addresses_obj))
+    if (!PyArg_ParseTuple(args, "ssO", &arch, &executable, &addresses_obj)
+            || !PyTuple_Check(addresses_obj))
         return NULL;
-            //|| !PyTuple_Check(addresses_obj))
 
     numofaddresses = PyTuple_Size(addresses_obj);
-    //printf("numofaddresses: %d\n", numofaddresses);
-    //unsigned int *addresses;
-    //addresses = (int *) malloc(sizeof(unsigned int)*numofaddresses);
     char **addresses;
     addresses = malloc(sizeof(char *)*numofaddresses);
     int i = 0;
@@ -45,58 +42,20 @@ symbolicate_wrapper(PyObject *self, PyObject *args)
         address_item = PyTuple_GetItem(addresses_obj, i);
         if (PyString_Check(address_item)){
             addresses[i] = PyString_AsString(address_item);
-            //printf("%s\n", addresses[i]);
         }else{
-            //printf("Error: tuple contains a non-string value");
-            exit(1);
+            PyErr_SetString(ATOSError, "tuple contains a non-string value.");
+            return NULL;
         }
-        //if (PyInt_Check(address_item)){
-        //    addresses[i] = (unsigned int)PyInt_AsLong(address_item);
-        //    printf("%d\n", addresses[i]);
-        //}else{
-        //    printf("Error: tuple contains a non-int value");
-        //    exit(1);
-        //}
     }
 
     result = symbolicate(arch, executable, addresses, numofaddresses);
 
     free(addresses);
-    //printf("end\n");
+    if (result == -1){
+        return NULL;
+    }
     return Py_BuildValue("i", result);
 }
-//static PyObject *
-//symbolicate_wrapper(PyObject *self, PyObject *args)
-//{
-//    const char *arch, *executable, *addresses_str;
-//    int sts;
-//    char **addresses;
-//
-//    int numofaddresses;
-//
-//    if (!PyArg_ParseTuple(args, "sss#", &arch, &executable, &addresses_str, &numofaddresses))
-//        return NULL;
-//
-//    char *temp = addresses_str;
-//    while(*temp != '\0'){
-//        if (*temp == ' '){
-//            *temp = '\0';
-//        }
-//        temp ++;
-//        addresses_str[i] = ;
-//    }
-//    addresses = malloc(sizeof(char *) * numofaddresses);
-//    int i = 0;
-//    while(i < numofaddresses){
-//        addresses[i] = ;
-//        i++;
-//    }
-//    addresses[]
-//    sts = symbolicate(arch, executable, NULL);
-//
-//    free(addresses);
-//    return Py_BuildValue("i", sts);
-//}
 
 static PyMethodDef ATOSMethods[] = {
     {"symbolicate",  symbolicate_wrapper, METH_VARARGS,
@@ -106,6 +65,14 @@ static PyMethodDef ATOSMethods[] = {
 
 PyMODINIT_FUNC initatos(void)
 {
-    (void) Py_InitModule("atos", ATOSMethods);
+    PyObject *m;
+
+    m = Py_InitModule("atos", ATOSMethods);
+    if (m == NULL)
+        return;
+
+    ATOSError = PyErr_NewException("atos.error", NULL, NULL);
+    Py_INCREF(ATOSError);
+    PyModule_AddObject(m, "error", ATOSError);
 }
 

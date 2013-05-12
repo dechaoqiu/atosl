@@ -19,7 +19,6 @@
 #include "macho.h"
 
 char *project_name;
-//#struct data_of_interest doi = {0};
 
 static struct die_info * read_die_and_children (char *info_ptr, struct dwarf2_cu *cu, char **new_info_ptr, struct die_info *parent);
 static struct die_info * read_die_and_siblings (char *info_ptr, struct dwarf2_cu *cu, char **new_info_ptr, struct die_info *parent);
@@ -44,15 +43,14 @@ static void free_line_header (struct line_header *lh)
 }
 
 
-CORE_ADDR read_signed_16(char *info_ptr){
-    //FIXME
+static CORE_ADDR read_signed_16(char *info_ptr){
     signed int ret = 0;
     ret = info_ptr[1];
     ret = (ret << 8) + info_ptr[0];
     return ret;
 }
 
-signed int read_signed_32(char *info_ptr){
+static signed int read_signed_32(char *info_ptr){
     unsigned char * temp_ptr = (unsigned char *)info_ptr;
     signed int ret = 0;
     ret = temp_ptr[3];
@@ -62,7 +60,7 @@ signed int read_signed_32(char *info_ptr){
     return ret;
 }
 
-int64_t read_signed_64(char *info_ptr){
+static int64_t read_signed_64(char *info_ptr){
     unsigned char * temp_ptr = (unsigned char *)info_ptr;
     int64_t ret = 0;
     ret = temp_ptr[7];
@@ -126,7 +124,7 @@ static unsigned long read_8_bytes (char *info_ptr)
     return ret;
 }
 
-unsigned int read_unsigned_int(char *info_ptr){
+static unsigned int read_unsigned_int(char *info_ptr){
     //read bytes little endian?
     unsigned char * temp_ptr = (unsigned char *)info_ptr;
     unsigned int ret = 0;
@@ -137,7 +135,7 @@ unsigned int read_unsigned_int(char *info_ptr){
     return ret;
 }
 
-unsigned short read_unsigned_short(char *info_ptr){
+static unsigned short read_unsigned_short(char *info_ptr){
     //read bytes little endian?
     unsigned char * temp_ptr = (unsigned char *)info_ptr;
     unsigned short ret = 0;
@@ -146,27 +144,14 @@ unsigned short read_unsigned_short(char *info_ptr){
     return ret;
 }
 
-unsigned char read_unsigned_char(char *info_ptr){
+static unsigned char read_unsigned_char(char *info_ptr){
     unsigned char * temp_ptr = (unsigned char *)info_ptr;
     unsigned char ret = 0;
     ret = temp_ptr[0];
     return ret;
 }
 
-//static char * skip_leb128 (unsigned char *buf)
-//{
-//    int byte;
-//
-//    while (1)
-//    {
-//        byte = *buf;
-//        buf++;
-//        if ((byte & 128) == 0)
-//            return buf;
-//    }
-//}
-//
-long long read_signed_leb128(char* leb128_str, unsigned int* leb128_length)
+static long long read_signed_leb128(char* leb128_str, unsigned int* leb128_length)
 {
     unsigned char * leb128 = (unsigned char * )leb128_str;
     signed long long number = 0;
@@ -201,7 +186,7 @@ long long read_signed_leb128(char* leb128_str, unsigned int* leb128_length)
 }
 
 
-unsigned long long read_unsigned_leb128(char* leb128_str, unsigned int* leb128_length)
+static unsigned long long read_unsigned_leb128(char* leb128_str, unsigned int* leb128_length)
 {
     unsigned char byte;
     unsigned long word_number;
@@ -399,13 +384,23 @@ static long read_initial_length_of_comp_unit (char *buf, struct comp_unit_head *
 
     if (cu_header)
     {
-        assert (cu_header->initial_length_size == 0
-                || cu_header->initial_length_size == 4
-                || cu_header->initial_length_size == 8
-                || cu_header->initial_length_size == 12);
+        //assert (cu_header->initial_length_size == 0
+        //        || cu_header->initial_length_size == 4
+        //        || cu_header->initial_length_size == 8
+        //        || cu_header->initial_length_size == 12);
+        
+        if(cu_header->initial_length_size != 0
+                && cu_header->initial_length_size == 4
+                && cu_header->initial_length_size == 8
+                && cu_header->initial_length_size == 12){
+            PyErr_Format(ATOSError, "cu_header->initial_length_size invalid");
+            return -1;
+        }
 
         if (cu_header->initial_length_size != 0 && cu_header->initial_length_size != *bytes_read){
-            printf("asset error ...\n");
+            PyErr_Format(ATOSError, "cu_header->initial_length_size is not equal to bytes_read");
+            fprintf(stderr, "cu_header->initial_length_size is not equal to bytes_read\n");
+            return -1;
         }
 
         cu_header->initial_length_size = *bytes_read;
@@ -416,8 +411,7 @@ static long read_initial_length_of_comp_unit (char *buf, struct comp_unit_head *
 }
 
 /* Add an entry to LH's include directory table.  */
-    static void
-add_include_dir (struct line_header *lh, char *include_dir)
+static void add_include_dir (struct line_header *lh, char *include_dir)
 {
     /* Grow the array if necessary.  */
     if (lh->include_dirs_size == 0)
@@ -487,7 +481,8 @@ static struct line_header * dwarf_decode_line_header (unsigned int offset, struc
     if (dwarf2_per_objfile->line_buffer == NULL)
     {
         printf("missing .debug_line section\n");
-        return 0;
+        PyErr_Format(ATOSError, "missing .debug_line section");
+        return NULL;
     }
 
     /* Make sure that at least there's room for the total_length field.
@@ -496,7 +491,8 @@ static struct line_header * dwarf_decode_line_header (unsigned int offset, struc
     {
         //dwarf2_statement_list_fits_in_line_number_section_complaint ();
         printf(".debug_line incomplete.\n");
-        return 0;
+        PyErr_Format(ATOSError, ".debug_line incomplete");
+        return NULL;
     }
 
     lh = malloc (sizeof (*lh));
@@ -508,12 +504,16 @@ static struct line_header * dwarf_decode_line_header (unsigned int offset, struc
     /* Read in the header.  */
     /* APPLE LOCAL Add cast to avoid type mismatch in arg4 warning.  */
     lh->total_length = read_initial_length_of_comp_unit (line_ptr, &cu->header, (int *) &bytes_read);
+    if(lh->total_length == -1){
+        return NULL;
+    }
     line_ptr += bytes_read;
     if (line_ptr + lh->total_length > (dwarf2_per_objfile->line_buffer
                 + dwarf2_per_objfile->line_size))
     {
         printf(".debug_line incomplete.\n");
-        return 0;
+        PyErr_Format(ATOSError, ".debug_line incomplete");
+        return NULL;
     }
     lh->statement_program_end = line_ptr + lh->total_length;
     lh->version = read_2_bytes (line_ptr);
@@ -566,9 +566,11 @@ static struct line_header * dwarf_decode_line_header (unsigned int offset, struc
     line_ptr += bytes_read;
     lh->statement_program_start = line_ptr; 
 
-    if (line_ptr > (dwarf2_per_objfile->line_buffer
-                + dwarf2_per_objfile->line_size))
+    if (line_ptr > (dwarf2_per_objfile->line_buffer + dwarf2_per_objfile->line_size)){
         printf("line number info header doesn't fit in `.debug_line' section\n");
+        PyErr_Format(ATOSError, "line number info header doesn't fit in `.debug_line' section");
+        return NULL;
+    }
 
     //    discard_cleanups (back_to);
     return lh;
@@ -577,7 +579,7 @@ static struct line_header * dwarf_decode_line_header (unsigned int offset, struc
 /* Add a linetable entry for line number LINE and address PC to the
    line vector for SUBFILE.  */
 
-void record_line (struct subfile *subfile, int line, CORE_ADDR pc)
+static void record_line (struct subfile *subfile, int line, CORE_ADDR pc)
 {
     struct linetable_entry *e;
     /* Ignore the dummy line number in libg.o */
@@ -616,24 +618,23 @@ void record_line (struct subfile *subfile, int line, CORE_ADDR pc)
 /* Needed in order to sort line tables from IBM xcoff files.  Sigh!  */
 
 /* APPLE LOCAL make compare_line_numbers extern */
-    int
-compare_line_numbers (const void *ln1p, const void *ln2p)
-{
-    struct linetable_entry *ln1 = (struct linetable_entry *) ln1p;
-    struct linetable_entry *ln2 = (struct linetable_entry *) ln2p;
-
-    /* Note: this code does not assume that CORE_ADDRs can fit in ints.
-       Please keep it that way.  */
-    if (ln1->pc < ln2->pc)
-        return -1;
-
-    if (ln1->pc > ln2->pc)
-        return 1;
-
-    /* If pc equal, sort by line.  I'm not sure whether this is optimum
-       behavior (see comment at struct linetable in symtab.h).  */
-    return ln1->line - ln2->line;
-}
+//static int compare_line_numbers (const void *ln1p, const void *ln2p)
+//{
+//    struct linetable_entry *ln1 = (struct linetable_entry *) ln1p;
+//    struct linetable_entry *ln2 = (struct linetable_entry *) ln2p;
+//
+//    /* Note: this code does not assume that CORE_ADDRs can fit in ints.
+//       Please keep it that way.  */
+//    if (ln1->pc < ln2->pc)
+//        return -1;
+//
+//    if (ln1->pc > ln2->pc)
+//        return 1;
+//
+//    /* If pc equal, sort by line.  I'm not sure whether this is optimum
+//       behavior (see comment at struct linetable in symtab.h).  */
+//    return ln1->line - ln2->line;
+//}
 
 
 /* Decode the Line Number Program (LNP) for the given line_header
@@ -973,13 +974,23 @@ void get_uuid_of_thin(struct thin_macho*thin_macho, char*uuid){
     }
 }
 
-struct dwarf2_per_objfile* parse_dwarf_segment(char *macho_str, long offset,struct segment_command *command){
+static struct dwarf2_per_objfile* parse_dwarf_segment(char *macho_str, long offset,struct segment_command *command){
     uint32_t numofdwarfsections = command->nsects;
 
     struct dwarf2_per_objfile *dwarf2_per_objfile = malloc(sizeof(struct dwarf2_per_objfile));
+    if (dwarf2_per_objfile == NULL){
+        printf("Malloc Error!\n");
+        PyErr_NoMemory();
+        return NULL;
+    }
     memset(dwarf2_per_objfile, '\0', sizeof(struct dwarf2_per_objfile));
 
     struct section * dwarf_section_headers = malloc(numofdwarfsections * sizeof(struct section));
+    if (dwarf_section_headers == NULL){
+        printf("Malloc Error!\n");
+        PyErr_NoMemory();
+        return NULL;
+    }
     memset(dwarf_section_headers, '\0', numofdwarfsections * sizeof (struct section));
     memcpy(dwarf_section_headers, macho_str + offset, numofdwarfsections * sizeof(struct section));
 
@@ -988,7 +999,8 @@ struct dwarf2_per_objfile* parse_dwarf_segment(char *macho_str, long offset,stru
         char *temp = malloc(dwarf_section_headers[i].size);
         if (temp == NULL){
             printf("Malloc Error!\n");
-            exit(-1);
+            PyErr_NoMemory();
+            return NULL;
         }
         memset(temp, '\0', dwarf_section_headers[i].size);
         memcpy(temp, macho_str + dwarf_section_headers[i].offset, dwarf_section_headers[i].size);
@@ -1055,13 +1067,23 @@ struct dwarf2_per_objfile* parse_dwarf_segment(char *macho_str, long offset,stru
 }
 
 
-struct dwarf2_per_objfile* parse_dwarf_segment_64(char *macho_str, long offset,struct segment_command_64 *command){
+static struct dwarf2_per_objfile* parse_dwarf_segment_64(char *macho_str, long offset,struct segment_command_64 *command){
     uint32_t numofdwarfsections = command->nsects;
 
     struct dwarf2_per_objfile *dwarf2_per_objfile = malloc(sizeof(struct dwarf2_per_objfile));
+    if (dwarf2_per_objfile == NULL){
+        printf("Malloc Error!\n");
+        PyErr_NoMemory();
+        return NULL;
+    }
     memset(dwarf2_per_objfile, '\0', sizeof(struct dwarf2_per_objfile));
 
     struct section_64 * dwarf_section_headers = malloc(numofdwarfsections * sizeof(struct section_64));
+    if (dwarf_section_headers == NULL){
+        printf("Malloc Error!\n");
+        PyErr_NoMemory();
+        return NULL;
+    }
     memset(dwarf_section_headers, '\0', numofdwarfsections * sizeof (struct section));
     memcpy(dwarf_section_headers, macho_str + offset, numofdwarfsections * sizeof(struct section_64));
 
@@ -1071,7 +1093,8 @@ struct dwarf2_per_objfile* parse_dwarf_segment_64(char *macho_str, long offset,s
         char *temp = malloc((uint32_t)dwarf_section_headers[i].size);
         if (temp == NULL){
             printf("Malloc Error!\n");
-            exit(-1);
+            PyErr_NoMemory();
+            return NULL;
         }
         memset(temp, '\0', (uint32_t)dwarf_section_headers[i].size);
         memcpy(temp, macho_str + dwarf_section_headers[i].offset, (uint32_t)dwarf_section_headers[i].size);
@@ -1243,6 +1266,10 @@ void print_all_dwarf2_per_objfile(struct dwarf2_per_objfile *dwarf2_per_objfile)
 int parse_normal(FILE *fp, uint32_t magic_number, struct target_file *tf){
     tf->numofarchs = 1;
     tf->thin_machos = malloc(1 *sizeof(struct thin_macho*));
+    if (tf->thin_machos == NULL){
+        PyErr_NoMemory();
+        return -1;
+    }
     memset(tf->thin_machos, '\0', 1 * sizeof(struct thin_macho*));
 
     fseek(fp, 0L, SEEK_END);
@@ -1252,16 +1279,24 @@ int parse_normal(FILE *fp, uint32_t magic_number, struct target_file *tf){
 
     int numofbytes = 0;
     tf->thin_machos[0] = malloc(sizeof(struct thin_macho));
+    if(tf->thin_machos[0] == NULL){
+        PyErr_NoMemory();
+        return -1;
+    }
     tf->thin_machos[0]->data = malloc(size);
+    if(tf->thin_machos[0]->data == NULL){
+        PyErr_NoMemory();
+        return -1;
+    }
     memset(tf->thin_machos[0]->data, '\0', size);
 
     numofbytes = fread(tf->thin_machos[0]->data, sizeof(char), size, fp);
-    assert(numofbytes == size);
+    //assert(numofbytes == size);
     if(numofbytes == size){
         parse_macho(tf->thin_machos[0]);
         return 0;
     }else{
-        exit(-1);
+        return -1;
     }
 }
 
@@ -1335,7 +1370,7 @@ static void free_die_list (struct die_info *dies)
     }
 }
 
-void free_compilation_units(struct dwarf2_per_objfile *dwarf2_per_objfile){
+static void free_compilation_units(struct dwarf2_per_objfile *dwarf2_per_objfile){
     struct dwarf2_per_cu_data **all_comp_units = dwarf2_per_objfile->all_comp_units;
     int i = 0;
     while(i < dwarf2_per_objfile->n_comp_units){
@@ -1438,8 +1473,9 @@ int select_thin_macho_by_arch(struct target_file *tf, const char *target_arch){
 struct target_file *parse_file(const char *filename){
     FILE *fp = fopen(filename, "rb");
     if (fp == NULL){
-        printf("Can not open file %s for read .\n", filename);
-        exit(-1);
+        fprintf(stderr, "Can not open file %s for read.\n", filename);
+        PyErr_Format(ATOSError, "Can not open file %s for read\n", filename);
+        return NULL;
     }
 
     //tell file type by their magic number
@@ -1448,70 +1484,79 @@ struct target_file *parse_file(const char *filename){
     //fat_arch, which are written in big-endian byte order.
 
     struct target_file *tf = malloc(sizeof(struct target_file));
+    if (tf == NULL){
+        PyErr_NoMemory();
+        return NULL;
+    }
     memset(tf, '\0', sizeof(struct target_file));
 
     int rc = 0;
     int seekreturn = 0;
     uint32_t magic_number = 0;
+    int parse_result = -1;
     if( (rc = fread(&magic_number, sizeof(uint32_t), 1, fp)) != 0 )
     {
         seekreturn = fseek (fp, 0 - sizeof(uint32_t), SEEK_CUR); 
-        assert(seekreturn == 0);
+        //assert(seekreturn == 0);
         if (seekreturn != 0){
             debug("seekreturn != 0");
-            exit(-1);
+            PyErr_Format(ATOSError, "seek error");
+            fclose(fp);
+            return NULL;
         }
         debug("magic_number: %x\n", magic_number);
         switch(magic_number){
             case MH_MAGIC:
                 //current machine endian is same with host machine
-                parse_normal(fp, MH_MAGIC, tf);
+                parse_result = parse_normal(fp, MH_MAGIC, tf);
                 break;
             case MH_MAGIC_64:
                 //current machine endian is same with host machine
-                parse_normal(fp, MH_MAGIC_64, tf);
+                parse_result = parse_normal(fp, MH_MAGIC_64, tf);
                 break;
             case MH_CIGAM:
                 printf("MH_CIGAM: %x\n", MH_CIGAM);
-                exit(-1);
+                PyErr_Format(ATOSError, "MH_CIGAM: %x\n", MH_CIGAM);
                 break;
             case MH_CIGAM_64:
                 //current machine endian is not same with host machine
                 printf("MH_CIGAM_64: %x\n", MH_CIGAM_64);
-                exit(-1);
+                PyErr_Format(ATOSError, "MH_CIGAM_64: %x\n", MH_CIGAM_64);
                 break;
             case FAT_MAGIC:
                 //current machine is big endian
-                parse_universal(fp, FAT_MAGIC, tf);
+                parse_result = parse_universal(fp, FAT_MAGIC, tf);
                 break;
             case FAT_CIGAM:
                 //current machie is small endian
-                parse_universal(fp, FAT_CIGAM, tf);
+                parse_result = parse_universal(fp, FAT_CIGAM, tf);
                 break;
             default:
-                printf("atos cannot load symbols for the file test.el for architecture %s.", "i386");
-                exit(-1);
+                fprintf(stderr, "magic_number invalid.");
+                PyErr_Format(ATOSError, "magic_number invalid");
         }
     } 
     fclose(fp); 
+    if(parse_result == -1){
+        return NULL;
+    }
     return tf;
 }
 
-void int32_endian_convert(int32_t *num)
-{
-    int32_t original_num = *num;
-    *num = 0;
-    int i;
-    for (i = 0; i < 4; i++)
-    {
-        *num <<= 8;
-        *num |= (original_num & 0xFF);
-        original_num >>= 8;
-    }
-}
+//static void int32_endian_convert(int32_t *num)
+//{
+//    int32_t original_num = *num;
+//    *num = 0;
+//    int i;
+//    for (i = 0; i < 4; i++)
+//    {
+//        *num <<= 8;
+//        *num |= (original_num & 0xFF);
+//        original_num >>= 8;
+//    }
+//}
 
-
-void uint32_endian_convert(uint32_t *num)
+static void uint32_endian_convert(uint32_t *num)
 {
     uint32_t original_num = *num;
     *num = 0;
@@ -1524,7 +1569,7 @@ void uint32_endian_convert(uint32_t *num)
     }
 }
 
-void integer_t_endian_convert(integer_t *num)
+static void integer_t_endian_convert(integer_t *num)
 {
     integer_t original_num = *num;
     *num = 0;
@@ -1557,18 +1602,27 @@ int parse_fat_arch(FILE *fp, struct fat_arch *fa, struct thin_macho**thin_macho,
     long cur_position = ftell(fp);
     int seekreturn = 0;
     seekreturn = fseek(fp, fa->offset, SEEK_SET);
-    assert(seekreturn == 0);
+    //assert(seekreturn == 0);
+    if(seekreturn != 0){
+        PyErr_Format(ATOSError, "seek error");
+        fprintf(stderr, "seek error.\n");
+        return -1;
+    }
 
     int numofbytes = 0;
     numofbytes = fread((*thin_macho)->data, sizeof(char), fa->size, fp);
-    assert(numofbytes == fa->size);
+    //assert(numofbytes == fa->size);
     if(numofbytes != fa->size){
-        exit(-1);
+        PyErr_Format(ATOSError, "read macho data error");
+        fprintf(stderr, "read macho data error.\n");
+        return -1;
     }
     seekreturn = fseek(fp, cur_position, SEEK_SET);
-    assert(seekreturn == 0);
+    //assert(seekreturn == 0);
     if(seekreturn != 0){
-        exit(-1);
+        PyErr_Format(ATOSError, "seek error.");
+        fprintf(stderr, "seek error.\n");
+        return -1;
     }
 
     return 0; 
@@ -1590,22 +1644,37 @@ int parse_universal(FILE *fp, uint32_t magic_number, struct target_file *tf){
     //free maloc failed? 
     tf->numofarchs = nfat_arch;
     tf->thin_machos = malloc(nfat_arch *sizeof(struct thin_macho*));
+    if (tf->thin_machos == NULL){
+        PyErr_NoMemory();
+        return -1;
+    }
     memset(tf->thin_machos, '\0', nfat_arch * sizeof(struct thin_macho*));
 
     uint32_t i = 0;
     struct fat_arch fa = {0};
     while (i < nfat_arch){
         tf->thin_machos[i] = malloc(sizeof(struct thin_macho));
+        if (tf->thin_machos[i] == NULL){
+            PyErr_NoMemory();
+            return -1;
+        }
         memset(tf->thin_machos[i], '\0', sizeof(struct thin_macho));
-        if( (rc = fread(&fa ,sizeof(struct fat_arch), 1, fp)) != 0 )
+        if( (rc = fread(&fa ,sizeof(struct fat_arch), 1, fp)) == 1 )
         {
-            assert(rc == 1);
-            parse_fat_arch(fp, &fa, &tf->thin_machos[i], magic_number);
+            int parse_fat_arch_result = parse_fat_arch(fp, &fa, &tf->thin_machos[i], magic_number);
+            if(parse_fat_arch_result == -1){
+                return -1;
+            }
         }else{
-            printf("read fat arch error\n");
+            PyErr_Format(ATOSError, "fread fat arch error");
+            fprintf(stderr, "read fat arch error\n");
+            return -1;
         }
         //FIXME
-        parse_macho(tf->thin_machos[i]);
+        int parse_macho_result = parse_macho(tf->thin_machos[i]);
+        if (parse_macho_result == -1){
+            return -1;
+        }
         i++;
     }
     return 0;
@@ -1651,19 +1720,25 @@ int parse_macho(struct thin_macho*tm){
         case MH_CIGAM:
             //current machine endian is not same with host machine
             //printf("MH_CIGAM: %x\n", MH_CIGAM);
+            printf("TODO: MH_CIGAM\n");
+            PyErr_Format(ATOSError, "TODO: MH_CIGAM");
             break;
         case MH_CIGAM_64:
+            printf("TODO: MH_CIGAM_64\n");
+            PyErr_Format(ATOSError, "TODO: MH_CIGAM_64");
             //current machine endian is not same with host machine
             //printf("MH_CIGAM_64: %x\n", MH_CIGAM_64);
             break;
         case FAT_MAGIC:
         case FAT_CIGAM:
-            printf("fat in fat?\n");
-            exit(-1);
+            fprintf(stderr, "fat in fat?\n");
+            PyErr_Format(ATOSError, "fat in fat?");
+            return -1;
             break;
         default:
-            printf("atos cannot load symbols for the file test.el for architecture %s.", "i386");
-            exit(-1);
+            fprintf(stderr, "magic_number invalid");
+            PyErr_Format(ATOSError, "magic_number invalid");
+            return -1;
     }
 
     offset += header_size;
@@ -1676,7 +1751,10 @@ int parse_macho(struct thin_macho*tm){
         //load_command type, so we do not need to add the offset.
         //offset += sizeof(struct load_command);
         //printf("%d\n",i);
-        parse_load_command(macho_str, &offset, &lc, tm);
+        int parse_load_command_result = parse_load_command(macho_str, &offset, &lc, tm);
+        if (parse_load_command_result == -1){
+            return -1;
+        }
         i++;
     }
     //    printf("finished\n");
@@ -1685,7 +1763,7 @@ int parse_macho(struct thin_macho*tm){
 
 /* Return a pointer to just past the end of an LEB128 number in BUF.  */
 
-unsigned int get_num_attr_spec_pair(char* info_ptr){
+static unsigned int get_num_attr_spec_pair(char* info_ptr){
     unsigned int bytes_read = 0;
     unsigned int num_attr_spec_pair = 0;
     unsigned int attr_name_code = (unsigned int)read_unsigned_leb128(info_ptr, &bytes_read);
@@ -1704,8 +1782,7 @@ unsigned int get_num_attr_spec_pair(char* info_ptr){
 
 /* Lookup an abbrev_info structure in the abbrev hash table.  */
 
-static struct abbrev_info *
-dwarf2_lookup_abbrev (unsigned int number, struct dwarf2_cu *cu)
+static struct abbrev_info * dwarf2_lookup_abbrev (unsigned int number, struct dwarf2_cu *cu)
 {
     unsigned int hash_number;
     struct abbrev_info *abbrev;
@@ -1723,7 +1800,7 @@ dwarf2_lookup_abbrev (unsigned int number, struct dwarf2_cu *cu)
     return NULL;
 }
 
-char * read_comp_unit_head (struct comp_unit_head *header, char *info_ptr)
+static char * read_comp_unit_head (struct comp_unit_head *header, char *info_ptr)
 {
     header->addr_size = 4;
     header->offset_size = 4;
@@ -1797,7 +1874,7 @@ static CORE_ADDR read_address_of_arange (char *buf, struct arange *arange, int *
             retval = read_signed_64(buf);
             break;
         default:
-            printf("read address: bad switch, signed\n");
+            fprintf(stderr, "read address: bad switch, signed\n");
     }
     *bytes_read = arange->aranges_header.addr_size;
     return retval;
@@ -1956,7 +2033,7 @@ static char * read_attribute_value (struct attribute *attr, unsigned int form, c
             info_ptr = read_attribute_value (attr, form, info_ptr, cu);
             break;
         default:
-            printf("Dwarf Error: Cannot handle  in DWARF reader [in module s]");
+            fprintf(stderr, "Dwarf Error: Cannot handle  in DWARF reader [in module s]");
             //   dwarf_form_name (form),
             //   bfd_get_filename (abfd));
     }
@@ -1972,7 +2049,7 @@ static char * read_attribute (struct attribute *attr, struct attr_abbrev *abbrev
     return read_attribute_value (attr, abbrev->form, info_ptr, cu);
 }
 
-static struct die_info * dwarf_alloc_die ()
+static struct die_info * dwarf_alloc_die(void)
 {
     struct die_info *die;
 
@@ -2013,7 +2090,7 @@ static char * read_full_die (struct die_info **diep, char *info_ptr,
     abbrev = dwarf2_lookup_abbrev (abbrev_number, cu);
     if (!abbrev)
     {
-        printf("Dwarf Error: could not find abbrev number %d\n", abbrev_number);
+        fprintf(stderr, "Dwarf Error: could not find abbrev number %d\n", abbrev_number);
     }
     die = dwarf_alloc_die ();
     //die->offset = offset;
@@ -2253,7 +2330,7 @@ static void create_all_comp_units(struct dwarf2_per_objfile *dwarf2_per_objfile)
     dwarf2_per_objfile->n_comp_units = n_comp_units;
 }
 
-void parse_dwarf_abbrev(struct dwarf2_per_objfile *dwarf2_per_objfile){
+static int parse_dwarf_abbrev(struct dwarf2_per_objfile *dwarf2_per_objfile){
     //allocate space form the abbrev hash
     struct abbrev_info **dwarf2_abbrevs= malloc(sizeof(struct abbrev_info *) * ABBREV_HASH_SIZE);
     memset(dwarf2_abbrevs, 0, sizeof(struct abbrev_info *) * ABBREV_HASH_SIZE);
@@ -2318,24 +2395,20 @@ void parse_dwarf_abbrev(struct dwarf2_per_objfile *dwarf2_per_objfile){
         i++;
     }
     debug("parse dwarf2_per_objfile finished.");
+    return 0;
 }
 
-void parse_dwarf_info(struct dwarf2_per_objfile *dwarf2_per_objfile){
+static int parse_dwarf_info(struct dwarf2_per_objfile *dwarf2_per_objfile){
     create_all_comp_units(dwarf2_per_objfile);
     int i = 0;
 //    struct dwarf2_cu *temp = NULL;
     for (i = 0; i< dwarf2_per_objfile->n_comp_units; i++){
         load_full_comp_unit(dwarf2_per_objfile, i);
     }
+    return 0;
 }
 
-struct address_range_descriptor{
-    CORE_ADDR beginning_addr;
-    //uint64_t length;
-    unsigned int length;
-};
-
-unsigned int get_num_arange_descriptor(char *aranges_ptr, struct arange *arange){
+static unsigned int get_num_arange_descriptor(char *aranges_ptr, struct arange *arange, int *flag){
     int bytes_read = 0;
     unsigned int num_of_ards = 0;
     CORE_ADDR beginning_addr = 0;
@@ -2358,8 +2431,10 @@ unsigned int get_num_arange_descriptor(char *aranges_ptr, struct arange *arange)
                 aranges_ptr += 8;
                 break;
             default:
-                printf("read address length offset: bad switch, signed\n");
-                exit(-1);
+                fprintf(stderr, "read address length offset: bad switch, signed\n");
+                PyErr_Format(ATOSError, "read address length offset: bad switch, signed");
+                *flag = -1;
+                return 0;
         }
         if(beginning_addr == 0 && length == 0){
             break;
@@ -2369,7 +2444,7 @@ unsigned int get_num_arange_descriptor(char *aranges_ptr, struct arange *arange)
     return num_of_ards;
 }
 
-static void parse_dwarf_aranges(struct dwarf2_per_objfile *dwarf2_per_objfile)
+static int parse_dwarf_aranges(struct dwarf2_per_objfile *dwarf2_per_objfile)
 {
 
     int n_allocated;
@@ -2418,17 +2493,27 @@ static void parse_dwarf_aranges(struct dwarf2_per_objfile *dwarf2_per_objfile)
 
         //FIXME 4 additional null bytes
         unsigned int zeros = read_4_bytes(aranges_ptr);
-        assert(zeros == 0);
+        //assert(zeros == 0);
         if(zeros != 0){
-            exit(-1);
+            fprintf(stderr, "should be 4 additional null bytes.");
+            PyErr_Format(ATOSError, "should be 4 additional null bytes");
+            return -1;
         }
         aranges_ptr += 4;
-        unsigned int num_of_ards = get_num_arange_descriptor(aranges_ptr, arange);
+        int flag = 0;
+        unsigned int num_of_ards = get_num_arange_descriptor(aranges_ptr, arange, &flag);
+        if (flag == -1){
+            return -1;
+        }
         arange->num_of_ards = num_of_ards;
         //printf("num_of_ards: %d\n", num_of_ards);
 
         arange->address_range_descriptors = malloc(num_of_ards * sizeof(struct address_range_descriptor));
-        assert(arange->address_range_descriptors != NULL);
+        //assert(arange->address_range_descriptors != NULL);
+        if(arange->address_range_descriptors == NULL){
+            PyErr_NoMemory();
+            return -1;
+        }
         memset(arange->address_range_descriptors, 0, num_of_ards * sizeof(struct address_range_descriptor));
         //struct address_range_descriptor ard
         int i = 0;
@@ -2452,8 +2537,9 @@ static void parse_dwarf_aranges(struct dwarf2_per_objfile *dwarf2_per_objfile)
                     aranges_ptr += 8;
                     break;
                 default:
-                    printf("read address length offset: bad switch, signed\n");
-                    exit(-1);
+                    fprintf(stderr, "read address length offset: bad switch, signed\n");
+                    PyErr_Format(ATOSError, "read address length offset: bad switch, signed\n");
+                    return -1;
             }
 
             //arange->address_range_descriptors[i].length = read_4_bytes(aranges_ptr);
@@ -2485,9 +2571,10 @@ static void parse_dwarf_aranges(struct dwarf2_per_objfile *dwarf2_per_objfile)
     memcpy (dwarf2_per_objfile->all_aranges, all_aranges, n_aranges * sizeof (struct arange *));
     free (all_aranges);
     dwarf2_per_objfile->n_aranges = n_aranges;
+    return 0;
 }
 
-int is_target_subprogram(struct die_info *die, struct address_range_descriptor *target_ard, CORE_ADDR integer_address){
+static int is_target_subprogram(struct die_info *die, struct address_range_descriptor *target_ard, CORE_ADDR integer_address){
     //FIXME May not need target_ard
     int flag = 0;
     unsigned int i = 0;
@@ -2517,7 +2604,7 @@ int is_target_subprogram(struct die_info *die, struct address_range_descriptor *
 
 }
 
-struct die_info *find_target_subprogram(struct die_info *die, struct address_range_descriptor *target_ard, CORE_ADDR integer_address){
+static struct die_info *find_target_subprogram(struct die_info *die, struct address_range_descriptor *target_ard, CORE_ADDR integer_address){
     if(die->tag == DW_TAG_subprogram){
         if(is_target_subprogram(die, target_ard, integer_address) == 1){
             return die;
@@ -2534,7 +2621,7 @@ struct die_info *find_target_subprogram(struct die_info *die, struct address_ran
     return NULL;
 
 }
-char *get_name_attribute(struct die_info *die){
+static char *get_name_attribute(struct die_info *die){
     unsigned int i = 0;
     for(i = 0; i < die->num_attrs; i++){
         if (die->attrs[i].name == DW_AT_name){
@@ -2544,7 +2631,7 @@ char *get_name_attribute(struct die_info *die){
     return NULL;
 }
 
-unsigned int get_stmt_list_attribute(struct die_info *die, char *flag){
+static unsigned int get_stmt_list_attribute(struct die_info *die, char *flag){
     unsigned int i = 0;
     for(i = 0; i < die->num_attrs; i++){
         if (die->attrs[i].name == DW_AT_stmt_list){
@@ -2556,7 +2643,7 @@ unsigned int get_stmt_list_attribute(struct die_info *die, char *flag){
     return 0;
 }
 
-int get_lineno_for_address(struct subfile *subfile, CORE_ADDR address){
+static int get_lineno_for_address(struct subfile *subfile, CORE_ADDR address){
     struct linetable_entry *current_entry;
     struct linetable_entry *next_entry;
     int i = 0;
@@ -2591,7 +2678,7 @@ void print_thin_macho_aranges(struct thin_macho *thin_macho){
     }
 }
 
-void select_symbol_by_address(struct nlist *symbols, uint32_t nsyms, CORE_ADDR target, struct nlist **found_symbol, int *offset){
+static void select_symbol_by_address(struct nlist *symbols, uint32_t nsyms, CORE_ADDR target, struct nlist **found_symbol, int *offset){
     uint32_t i= 0;
     for (i = 0; i < nsyms; ++i) {
         /*  The symbol must be defined in a section, and must not be a debugging entry. */
@@ -2691,12 +2778,16 @@ int lookup_by_address_in_dwarf(struct thin_macho *thin_macho, CORE_ADDR integer_
     char flag = 0;
     unsigned int offset = get_stmt_list_attribute(target_cu->dies, &flag);
     if(flag == 1){
-        printf("do not have stmt_list attribute\n");
-        exit(-1);
+        fprintf(stderr, "do not have stmt_list attribute\n");
+        PyErr_Format(ATOSError, "do not have stmt_list attribute");
+        return -1;
     }else{
         debug("offset: 0x%08x\n", offset);
     }
     struct line_header *lh = dwarf_decode_line_header (offset, target_cu);
+    if(lh == NULL){
+        return -1;
+    }
     struct subfile * current_subfile = dwarf_decode_lines (lh, NULL, target_cu);
     //print_line_vector(current_subfile);
     int lineno = get_lineno_for_address(current_subfile, address);
@@ -2738,157 +2829,178 @@ void parse_lc_symtab(char *macho_str, struct symtab_command *command, struct thi
 }
 
 int parse_dwarf2_per_objfile(struct dwarf2_per_objfile *dwarf2_per_objfile){
+    int result = -1;
+    //TODO
     debug("about to parse_dwarf_abbrev");
-    parse_dwarf_abbrev(dwarf2_per_objfile);
+    result = parse_dwarf_abbrev(dwarf2_per_objfile);
+    if (result == -1){
+        return -1;
+    }
     debug("about to parse_dwarf_info");
-    parse_dwarf_info(dwarf2_per_objfile);
+    result = parse_dwarf_info(dwarf2_per_objfile);
+    if (result == -1){
+        return -1;
+    }
     debug("about to parse_dwarf_aranges");
-    parse_dwarf_aranges(dwarf2_per_objfile);
+    result = parse_dwarf_aranges(dwarf2_per_objfile);
+    if (result == -1){
+        return -1;
+    }
     return 0;
 }
 
 int parse_load_command(char *macho_str, long *offset, struct load_command *lc, struct thin_macho*tm){
+    int load_command_result = -1;
     switch (lc->cmd){
         case LC_UUID: 
-            process_lc_uuid(macho_str, offset, tm);
+            load_command_result = process_lc_uuid(macho_str, offset, tm);
             break;
         case LC_SEGMENT: 
-            process_lc_segment(macho_str, offset, tm);
+            load_command_result = process_lc_segment(macho_str, offset, tm);
             break;
         case LC_SEGMENT_64: 
-            process_lc_segment_64(macho_str, offset, tm);
+            load_command_result = process_lc_segment_64(macho_str, offset, tm);
             break;
         case LC_SYMTAB:
-            process_lc_symtab(macho_str, offset, tm);
+            load_command_result = process_lc_symtab(macho_str, offset, tm);
             break;
         case LC_DYSYMTAB:
-            process_lc_dysymtab(macho_str, offset, tm);
+            load_command_result = process_lc_dysymtab(macho_str, offset, tm);
             break;
         case LC_THREAD:
-            process_lc_thread(macho_str, offset);
+            load_command_result = process_lc_thread(macho_str, offset);
             break;
         case LC_UNIXTHREAD:
-            process_lc_unixthread(macho_str, offset);
+            load_command_result = process_lc_unixthread(macho_str, offset);
             break;
         case LC_LOAD_DYLIB:
-            process_lc_load_dylib(macho_str, offset);
+            load_command_result = process_lc_load_dylib(macho_str, offset);
             break;
         case LC_ID_DYLIB:
-            process_lc_id_dylib(macho_str, offset);
+            load_command_result = process_lc_id_dylib(macho_str, offset);
             break;
         case LC_PREBOUND_DYLIB:
-            process_lc_prebound_dylib(macho_str, offset);
+            load_command_result = process_lc_prebound_dylib(macho_str, offset);
             break;
         case LC_LOAD_DYLINKER:
-            process_lc_load_dylinker(macho_str, offset);
+            load_command_result = process_lc_load_dylinker(macho_str, offset);
             break;
         case LC_ID_DYLINKER:
-            process_lc_id_dylinker(macho_str, offset);
+            load_command_result = process_lc_id_dylinker(macho_str, offset);
             break;
         case LC_ROUTINES:
-            process_lc_routines(macho_str, offset);
+            load_command_result = process_lc_routines(macho_str, offset);
             break;
         case LC_ROUTINES_64:
-            process_lc_routines_64(macho_str, offset);
+            load_command_result = process_lc_routines_64(macho_str, offset);
             break;
         case LC_TWOLEVEL_HINTS:
-            process_lc_twolevel_hints(macho_str, offset);
+            load_command_result = process_lc_twolevel_hints(macho_str, offset);
             break;
         case LC_SUB_FRAMEWORK:
-            process_lc_sub_framework(macho_str, offset);
+            load_command_result = process_lc_sub_framework(macho_str, offset);
             break;
         case LC_SUB_UMBRELLA:
-            process_lc_sub_umbrella(macho_str, offset);
+            load_command_result = process_lc_sub_umbrella(macho_str, offset);
             break;
         case LC_SUB_LIBRARY:
-            process_lc_sub_library(macho_str, offset);
+            load_command_result = process_lc_sub_library(macho_str, offset);
             break;
         case LC_SUB_CLIENT:
-            process_lc_sub_client(macho_str, offset);
+            load_command_result = process_lc_sub_client(macho_str, offset);
             break;
         case LC_DATA_IN_CODE:
-            process_lc_data_in_code(macho_str, offset);
+            load_command_result = process_lc_data_in_code(macho_str, offset);
             break;
         case LC_FUNCTION_STARTS:
-            process_lc_function_starts(macho_str, offset);
+            load_command_result = process_lc_function_starts(macho_str, offset);
             break;
         case LC_DYLD_INFO_ONLY:
-            process_lc_dyld_info_only(macho_str, offset);
+            load_command_result = process_lc_dyld_info_only(macho_str, offset);
             break;
         case LC_DYLD_INFO:
-            process_lc_dyld_info_only(macho_str, offset);
+            load_command_result = process_lc_dyld_info_only(macho_str, offset);
             break;
         case LC_VERSION_MIN_IPHONEOS:
-            process_lc_version_min_iphoneos(macho_str, offset);
+            load_command_result = process_lc_version_min_iphoneos(macho_str, offset);
             break;
         case LC_VERSION_MIN_MACOSX:
-            process_lc_version_min_macosx(macho_str, offset);
+            load_command_result = process_lc_version_min_macosx(macho_str, offset);
             break;
         case LC_SOURCE_VERSION:
-            process_lc_source_version(macho_str, offset);
+            load_command_result = process_lc_source_version(macho_str, offset);
             break;
         case LC_REEXPORT_DYLIB:
-            process_lc_reexport_dylib(macho_str, offset);
+            load_command_result = process_lc_reexport_dylib(macho_str, offset);
             break;
         case LC_SYMSEG:
-            process_lc_symseg(macho_str, offset);
+            load_command_result = process_lc_symseg(macho_str, offset);
             break;
         case LC_LOADFVMLIB:
-            process_lc_loadfvmlib(macho_str, offset);
+            load_command_result = process_lc_loadfvmlib(macho_str, offset);
             break;
         case LC_IDFVMLIB:
-            process_lc_idfvmlib(macho_str, offset);
+            load_command_result = process_lc_idfvmlib(macho_str, offset);
             break;
         case LC_IDENT:
-            process_lc_ident(macho_str, offset);
+            load_command_result = process_lc_ident(macho_str, offset);
             break;
         case LC_FVMFILE:
-            process_lc_fvmfile(macho_str, offset);
+            load_command_result = process_lc_fvmfile(macho_str, offset);
             break;
         case LC_PREBIND_CKSUM:
-            process_lc_prebind_cksum(macho_str, offset);
+            load_command_result = process_lc_prebind_cksum(macho_str, offset);
             break;
         case LC_LOAD_WEAK_DYLIB:
-            process_lc_load_weak_dylib(macho_str, offset);
+            load_command_result = process_lc_load_weak_dylib(macho_str, offset);
             break;
         case LC_RPATH:
-            process_lc_rpath(macho_str, offset);
+            load_command_result = process_lc_rpath(macho_str, offset);
             break;
         case LC_CODE_SIGNATURE:
-            process_lc_code_signature(macho_str, offset);
+            load_command_result = process_lc_code_signature(macho_str, offset);
             break;
         case LC_SEGMENT_SPLIT_INFO:
-            process_lc_segment_split_info(macho_str, offset);
+            load_command_result = process_lc_segment_split_info(macho_str, offset);
             break;
         case LC_ENCRYPTION_INFO:
-            process_lc_encryption_info(macho_str, offset);
+            load_command_result = process_lc_encryption_info(macho_str, offset);
             break;
         case LC_DYLD_ENVIRONMENT:
-            process_lc_dyld_environment(macho_str, offset);
+            load_command_result = process_lc_dyld_environment(macho_str, offset);
             break;
         case LC_MAIN:
-            process_lc_main(macho_str, offset);
+            load_command_result = process_lc_main(macho_str, offset);
             break;
         case LC_DYLIB_CODE_SIGN_DRS:
-            process_lc_dylib_code_sign_drs(macho_str, offset);
+            load_command_result = process_lc_dylib_code_sign_drs(macho_str, offset);
             break;
         case LC_PREPAGE:
             //printf("known load commmand type LC_PREPAGE, but ignoring...\n");
-            process_lc_command(macho_str, offset);
+            load_command_result = process_lc_command(macho_str, offset);
             break;
         case LC_LAZY_LOAD_DYLIB:
             //printf("known load commmand type LC_LAZY_LOAD_DYLIB, but ignoring...\n");
-            process_lc_command(macho_str, offset);
+            load_command_result = process_lc_command(macho_str, offset);
             break;
         case LC_LOAD_UPWARD_DYLIB:
             //printf("known load commmand type LC_LOAD_UPWARD_DYLIB, but ignoring...\n");
-            process_lc_command(macho_str, offset);
+            load_command_result = process_lc_command(macho_str, offset);
             break;
         default:
-            printf("unknown load commmand type, ignoring...\n");
-
+            fprintf(stderr, "unknown load commmand type, ignoring...\n");
     }
-    return 0;
+    return load_command_result;
+}
+
+void print_uuid(struct uuid_command *command){
+    int numofbytes = sizeof(command->uuid)/sizeof(*command->uuid);
+    printf("uuid: ");
+    int i = 0;
+    for (i = 0; i < numofbytes; i++){
+        printf("%02X", command->uuid[i]);
+    }
+    printf("\n");
 }
 
 int process_lc_source_version(char *macho_str, long *offset){
@@ -2909,16 +3021,6 @@ int process_lc_version_min_iphoneos(char *macho_str, long *offset){
     memcpy(&command, macho_str + *offset, sizeof(struct version_min_command));
     *offset += command.cmdsize;
     return 0;
-}
-
-void print_uuid(struct uuid_command *command){
-    int numofbytes = sizeof(command->uuid)/sizeof(*command->uuid);
-    printf("uuid: ");
-    int i = 0;
-    for (i = 0; i < numofbytes; i++){
-        printf("%02X", command->uuid[i]);
-    }
-    printf("\n");
 }
 
 int process_lc_dyld_info_only(char *macho_str, long *offset){
@@ -2972,6 +3074,9 @@ int process_lc_segment(char *macho_str, long *offset, struct thin_macho*tm){
     //}
     if(strcmp(command.segname, "__DWARF") == 0){
         tm->dwarf2_per_objfile = parse_dwarf_segment(macho_str, *offset, &command);
+        if (tm->dwarf2_per_objfile == NULL){
+            return -1;
+        }
     }
     //in case there are sections, we need to seek the file point to the next load command
     *offset += command.cmdsize - sizeof(struct segment_command); 
@@ -2987,6 +3092,9 @@ int process_lc_segment_64(char *macho_str, long *offset, struct thin_macho*tm){
     //}
     if(strcmp(command.segname, "__DWARF") == 0){
         tm->dwarf2_per_objfile = parse_dwarf_segment_64(macho_str, *offset, &command);
+        if (tm->dwarf2_per_objfile == NULL){
+            return -1;
+        }
     }
     *offset += command.cmdsize - sizeof(struct segment_command_64); 
 
