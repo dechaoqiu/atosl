@@ -1257,8 +1257,12 @@ int parse_normal(FILE *fp, uint32_t magic_number, struct target_file *tf){
 
     numofbytes = fread(tf->thin_machos[0]->data, sizeof(char), size, fp);
     assert(numofbytes == size);
-    parse_macho(tf->thin_machos[0]);
-    return 0;
+    if(numofbytes == size){
+        parse_macho(tf->thin_machos[0]);
+        return 0;
+    }else{
+        exit(-1);
+    }
 }
 
 void free_buffers(struct dwarf2_per_objfile *dwarf2_per_objfile){
@@ -1453,6 +1457,10 @@ struct target_file *parse_file(const char *filename){
     {
         seekreturn = fseek (fp, 0 - sizeof(uint32_t), SEEK_CUR); 
         assert(seekreturn == 0);
+        if (seekreturn != 0){
+            debug("seekreturn != 0");
+            exit(-1);
+        }
         debug("magic_number: %x\n", magic_number);
         switch(magic_number){
             case MH_MAGIC:
@@ -1554,8 +1562,14 @@ int parse_fat_arch(FILE *fp, struct fat_arch *fa, struct thin_macho**thin_macho,
     int numofbytes = 0;
     numofbytes = fread((*thin_macho)->data, sizeof(char), fa->size, fp);
     assert(numofbytes == fa->size);
+    if(numofbytes != fa->size){
+        exit(-1);
+    }
     seekreturn = fseek(fp, cur_position, SEEK_SET);
     assert(seekreturn == 0);
+    if(seekreturn != 0){
+        exit(-1);
+    }
 
     return 0; 
 }
@@ -2405,6 +2419,9 @@ static void parse_dwarf_aranges(struct dwarf2_per_objfile *dwarf2_per_objfile)
         //FIXME 4 additional null bytes
         unsigned int zeros = read_4_bytes(aranges_ptr);
         assert(zeros == 0);
+        if(zeros != 0){
+            exit(-1);
+        }
         aranges_ptr += 4;
         unsigned int num_of_ards = get_num_arange_descriptor(aranges_ptr, arange);
         arange->num_of_ards = num_of_ards;
