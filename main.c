@@ -77,7 +77,7 @@ int symbolicate(const char* arch, const char *executable, char *addresses[], int
     debug("parse file finished.");
 
     struct thin_macho *thin_macho = NULL;
-    //performance
+    //TODO performance
     i = 0;
     i = select_thin_macho_by_arch(tf, arch);
     if(i == -1){

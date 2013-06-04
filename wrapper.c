@@ -65,38 +65,6 @@ symbolicate_wrapper(PyObject *self, PyObject *args)
     //printf("end\n");
     return Py_BuildValue("i", result);
 }
-//static PyObject *
-//symbolicate_wrapper(PyObject *self, PyObject *args)
-//{
-//    const char *arch, *executable, *addresses_str;
-//    int sts;
-//    char **addresses;
-//
-//    int numofaddresses;
-//
-//    if (!PyArg_ParseTuple(args, "sss#", &arch, &executable, &addresses_str, &numofaddresses))
-//        return NULL;
-//
-//    char *temp = addresses_str;
-//    while(*temp != '\0'){
-//        if (*temp == ' '){
-//            *temp = '\0';
-//        }
-//        temp ++;
-//        addresses_str[i] = ;
-//    }
-//    addresses = malloc(sizeof(char *) * numofaddresses);
-//    int i = 0;
-//    while(i < numofaddresses){
-//        addresses[i] = ;
-//        i++;
-//    }
-//    addresses[]
-//    sts = symbolicate(arch, executable, NULL);
-//
-//    free(addresses);
-//    return Py_BuildValue("i", sts);
-//}
 
 static PyMethodDef ATOSMethods[] = {
     {"symbolicate",  symbolicate_wrapper, METH_VARARGS,
