@@ -8,7 +8,8 @@ debug_atos
 #test.sh
 #TestMac*
 core
-# tags
+tags
+*.swp
 
 # Libraries
 *.lib

@@ -1,6 +1,13 @@
 #ifndef MACHO_H
 #define MACHO_H
+
+#ifndef NORMAL_COMPILE
 #include "wrapper.h"
+#else
+#define PyErr_NoMemory()
+#define PyErr_Format(stream, format,...)
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>

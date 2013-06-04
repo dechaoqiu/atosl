@@ -384,10 +384,10 @@ static long read_initial_length_of_comp_unit (char *buf, struct comp_unit_head *
 
     if (cu_header)
     {
-        //assert (cu_header->initial_length_size == 0
-        //        || cu_header->initial_length_size == 4
-        //        || cu_header->initial_length_size == 8
-        //        || cu_header->initial_length_size == 12);
+        assert (cu_header->initial_length_size == 0
+                || cu_header->initial_length_size == 4
+                || cu_header->initial_length_size == 8
+                || cu_header->initial_length_size == 12);
         
         if(cu_header->initial_length_size != 0
                 && cu_header->initial_length_size != 4
@@ -1291,7 +1291,7 @@ int parse_normal(FILE *fp, uint32_t magic_number, struct target_file *tf){
     memset(tf->thin_machos[0]->data, '\0', size);
 
     numofbytes = fread(tf->thin_machos[0]->data, sizeof(char), size, fp);
-    //assert(numofbytes == size);
+    assert(numofbytes == size);
     if(numofbytes == size){
         parse_macho(tf->thin_machos[0]);
         return 0;
@@ -1497,7 +1497,7 @@ struct target_file *parse_file(const char *filename){
     if( (rc = fread(&magic_number, sizeof(uint32_t), 1, fp)) != 0 )
     {
         seekreturn = fseek (fp, 0 - sizeof(uint32_t), SEEK_CUR); 
-        //assert(seekreturn == 0);
+        assert(seekreturn == 0);
         if (seekreturn != 0){
             debug("seekreturn != 0");
             PyErr_Format(ATOSError, "seek error");
@@ -1602,7 +1602,7 @@ int parse_fat_arch(FILE *fp, struct fat_arch *fa, struct thin_macho**thin_macho,
     long cur_position = ftell(fp);
     int seekreturn = 0;
     seekreturn = fseek(fp, fa->offset, SEEK_SET);
-    //assert(seekreturn == 0);
+    assert(seekreturn == 0);
     if(seekreturn != 0){
         PyErr_Format(ATOSError, "seek error");
         fprintf(stderr, "seek error.\n");
@@ -1611,14 +1611,14 @@ int parse_fat_arch(FILE *fp, struct fat_arch *fa, struct thin_macho**thin_macho,
 
     int numofbytes = 0;
     numofbytes = fread((*thin_macho)->data, sizeof(char), fa->size, fp);
-    //assert(numofbytes == fa->size);
+    assert(numofbytes == fa->size);
     if(numofbytes != fa->size){
         PyErr_Format(ATOSError, "read macho data error");
         fprintf(stderr, "read macho data error.\n");
         return -1;
     }
     seekreturn = fseek(fp, cur_position, SEEK_SET);
-    //assert(seekreturn == 0);
+    assert(seekreturn == 0);
     if(seekreturn != 0){
         PyErr_Format(ATOSError, "seek error.");
         fprintf(stderr, "seek error.\n");
@@ -2493,7 +2493,7 @@ static int parse_dwarf_aranges(struct dwarf2_per_objfile *dwarf2_per_objfile)
 
         //FIXME 4 additional null bytes
         unsigned int zeros = read_4_bytes(aranges_ptr);
-        //assert(zeros == 0);
+        assert(zeros == 0);
         if(zeros != 0){
             fprintf(stderr, "should be 4 additional null bytes.");
             PyErr_Format(ATOSError, "should be 4 additional null bytes");
@@ -2509,7 +2509,7 @@ static int parse_dwarf_aranges(struct dwarf2_per_objfile *dwarf2_per_objfile)
         //printf("num_of_ards: %d\n", num_of_ards);
 
         arange->address_range_descriptors = malloc(num_of_ards * sizeof(struct address_range_descriptor));
-        //assert(arange->address_range_descriptors != NULL);
+        assert(arange->address_range_descriptors != NULL);
         if(arange->address_range_descriptors == NULL){
             PyErr_NoMemory();
             return -1;
