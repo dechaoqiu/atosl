@@ -74,7 +74,7 @@ int symbolicate(const char* arch, const char *executable, char *addresses[], int
     debug("parse file finished.");
 
     struct thin_macho *thin_macho = NULL;
-    //FIXME about performance
+    //TODO performance
     int i = select_thin_macho_by_arch(tf, arch);
     if(i == -1){
         printf("atos: Can not find macho for architecture: %s.\n", arch);
