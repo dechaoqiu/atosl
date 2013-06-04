@@ -390,9 +390,9 @@ static long read_initial_length_of_comp_unit (char *buf, struct comp_unit_head *
         //        || cu_header->initial_length_size == 12);
         
         if(cu_header->initial_length_size != 0
-                && cu_header->initial_length_size == 4
-                && cu_header->initial_length_size == 8
-                && cu_header->initial_length_size == 12){
+                && cu_header->initial_length_size != 4
+                && cu_header->initial_length_size != 8
+                && cu_header->initial_length_size != 12){
             PyErr_Format(ATOSError, "cu_header->initial_length_size invalid");
             return -1;
         }
