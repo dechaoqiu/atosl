@@ -301,6 +301,7 @@
 #define CPU_SUBTYPE_ARM_V7F		((cpu_subtype_t) 10) /* Cortex A9 */
 #define CPU_SUBTYPE_ARM_V7S      ((cpu_subtype_t) 11)
 #define CPU_SUBTYPE_ARM_V7K		((cpu_subtype_t) 12) /* Kirkwood40 */
+#define CPU_SUBTYPE_ARM_V8		((cpu_subtype_t) 13)
 
 #endif /* !__ASSEMBLER__ */
 

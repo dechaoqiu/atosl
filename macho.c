@@ -1439,6 +1439,10 @@ int select_thin_macho_by_arch(struct target_file *tf, const char *target_arch){
                             //armv7s
                             arch = "armv7s";
                             break;
+                        case CPU_SUBTYPE_ARM_V8:
+                            //armv8
+                            arch = "armv8";
+                            break;
                    }
                    break;
                }
