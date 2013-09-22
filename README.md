@@ -14,4 +14,4 @@ Mach-O File Format Reader
 
 ## EXAMPLE
 
-1. atos -arch ARMV7S -0 ~/TEST 0X00001100
+1. atos -arch ARMV7S -o ~/TEST 0X00001100

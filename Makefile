@@ -46,7 +46,7 @@ clean:
 	rm -rf $(EXECUTABLE) $(DEBUG) *.o
 install:
 	cp atos /usr/local/bin/atos
-	#cp atos /opt/bin/atos
+	cp atos /opt/bin/atos
 	cp atos /home/web/Crab/env/bin/atos
 
 .PHONY: install clean

@@ -52,9 +52,9 @@ enum language
 };
 
 
-typedef unsigned int CORE_ADDR;
-//typedef uint64_t CORE_ADDR;
-//2278 length nedd to be change for 64bits
+typedef uint64_t CORE_ADDR;
+// typedef unsigned int CORE_ADDR;
+//struct address_range_descriptor AND CORE_ADDR should be changed for 64bits
 
 struct lc_function_starts
 {
@@ -147,8 +147,8 @@ struct aranges_header
 
 struct address_range_descriptor{
     CORE_ADDR beginning_addr;
-    //uint64_t length;
-    unsigned int length;
+    uint64_t length;
+    //unsigned int length;
 };
 
 struct arange{
