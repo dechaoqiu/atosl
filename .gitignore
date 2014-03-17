@@ -2,9 +2,10 @@
 *.o
 ctags
 UIKit
-#CrashTest*
 atos
+atosl
 debug_atos
+debug_atosl
 #test.sh
 #TestMac*
 core

@@ -11,7 +11,7 @@
  *       Compiler:  gcc
  *
  *         Author:  Reno Qiu
- *   Organization:  
+ *   Organization:
  *
  * =====================================================================================
  */
@@ -23,7 +23,7 @@ extern char *project_name;
 static int lookup_by_address(struct thin_macho *thin_macho, CORE_ADDR integer_address){
     int result = -1;
     if(thin_macho->dwarf2_per_objfile != NULL){
-        result = lookup_by_address_in_dwarf(thin_macho, integer_address); 
+        result = lookup_by_address_in_dwarf(thin_macho, integer_address);
     }
     if(result == -1){
         result = lookup_by_address_in_symtable(thin_macho, integer_address);
@@ -44,7 +44,7 @@ static void numeric_to_symbols(struct thin_macho *thin_macho, const char **addre
         }else{
             integer_address= strtoll(address, NULL, 16);
         }
-        
+
         if (lookup_by_address(thin_macho, integer_address) != 0){
             printf("%s\n", addresses[i]);
         }
@@ -77,7 +77,7 @@ int symbolicate(const char* arch, const char *executable, char *addresses[], int
     //TODO performance
     int i = select_thin_macho_by_arch(tf, arch);
     if(i == -1){
-        printf("atos: Can not find macho for architecture: %s.\n", arch);
+        printf("atosl: Can not find macho for architecture: %s.\n", arch);
         return -1;
     }
     thin_macho = tf->thin_machos[i];
@@ -91,11 +91,11 @@ int symbolicate(const char* arch, const char *executable, char *addresses[], int
         parse_dwarf2_per_objfile(thin_macho->dwarf2_per_objfile);
         debug("parse dwarf2 objfile finished.");
     }
-    
+
     #ifdef DEBUG
         print_thin_macho_aranges(thin_macho);
     #endif
-    
+
     debug("about to invoke numeric_to_symbols.");
     numeric_to_symbols(thin_macho, (const char **)addresses, numofaddresses);
     free_target_file(tf);
@@ -104,7 +104,7 @@ int symbolicate(const char* arch, const char *executable, char *addresses[], int
 
 int main(int argc, char *argv[]){
     if (argc < 6){
-        printf("usage:  atos -arch architecture -o executable [address ...]\n");
+        printf("usage:  atosl -arch architecture -o executable [address ...]\n");
         exit(-1);
     }
     assert(strcmp(argv[1], "-arch") == 0);

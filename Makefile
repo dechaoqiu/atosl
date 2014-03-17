@@ -5,8 +5,8 @@ OFLAG = -o
 LIBS = 
 OBJECTS = main.o macho.o converter.o
 DEBUG_OBJECTS =  main_debug.o macho_debug.o converter_debug.o
-EXECUTABLE = atos
-DEBUG = debug_atos
+EXECUTABLE = atosl
+DEBUG = debug_atosl
 
 all: release debug
 
@@ -45,8 +45,7 @@ uuid: $(OBJECTS) uuid_reader.o
 clean:
 	rm -rf $(EXECUTABLE) $(DEBUG) *.o
 install:
-	cp atos /usr/local/bin/atos
-	cp atos /opt/bin/atos
-	cp atos /home/web/Crab/env/bin/atos
+	cp atosl /usr/local/bin/atosl
+	cp atosl /opt/bin/atosl
 
 .PHONY: install clean
