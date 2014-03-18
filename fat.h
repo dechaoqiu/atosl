@@ -1,6 +1,7 @@
 #ifndef _MACH_O_FAT_H_
 #define _MACH_O_FAT_H_
 #include <stdint.h>
+
 typedef int         vm_prot_t;
 typedef int         integer_t;
 typedef integer_t   cpu_type_t;

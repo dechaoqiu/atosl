@@ -1,11 +1,18 @@
 #ifndef MACHO_H
 #define MACHO_H
 
-#ifndef NORMAL_COMPILE
-#include "wrapper.h"
-#else
+#ifdef NORMAL_COMPILE
 #define PyErr_NoMemory()
 #define PyErr_Format(stream, format,...)
+#endif
+
+#ifdef RUBY_H
+#define PyErr_NoMemory()
+#define PyErr_Format(stream, format,...)
+#endif
+
+#ifdef Py_PYTHON_H
+#include "python_wrapper.h"
 #endif
 
 #include <stdio.h>
@@ -228,8 +235,8 @@ struct dwarf2_per_objfile
 
 struct attr_abbrev
 {
-    enum dwarf_attribute name; 
-    enum dwarf_form form; 
+    enum dwarf_attribute name;
+    enum dwarf_form form;
 };
 
 

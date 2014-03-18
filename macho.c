@@ -11,7 +11,7 @@
  *       Compiler:  gcc
  *
  *         Author:  Reno Qiu
- *   Organization:  
+ *   Organization:
  *
  * =====================================================================================
  */
@@ -160,7 +160,7 @@ static long long read_signed_leb128(char* leb128_str, unsigned int* leb128_lengt
     unsigned char byte = *leb128;
     signed long byte_length = 1;
 
-    /*  byte_length being the number of bytes of data absorbed so far in 
+    /*  byte_length being the number of bytes of data absorbed so far in
      *         turning the leb into a Dwarf_Signed. */
 
     for (;;) {
@@ -229,7 +229,7 @@ static unsigned long long read_unsigned_leb128(char* leb128_str, unsigned int* l
         return (word_number);
     }
 
-    /*  The rest handles long numbers Because the 'number' may be larger 
+    /*  The rest handles long numbers Because the 'number' may be larger
      *  than the default int/unsigned, we must cast the 'byte' before
      *  the shift for the shift to have a defined result. */
     number = 0;
@@ -388,7 +388,7 @@ static long read_initial_length_of_comp_unit (char *buf, struct comp_unit_head *
                 || cu_header->initial_length_size == 4
                 || cu_header->initial_length_size == 8
                 || cu_header->initial_length_size == 12);
-        
+
         if(cu_header->initial_length_size != 0
                 && cu_header->initial_length_size != 4
                 && cu_header->initial_length_size != 8
@@ -564,7 +564,7 @@ static struct line_header * dwarf_decode_line_header (unsigned int offset, struc
         add_file_name (lh, cur_file, dir_index, mod_time, length);
     }
     line_ptr += bytes_read;
-    lh->statement_program_start = line_ptr; 
+    lh->statement_program_start = line_ptr;
 
     if (line_ptr > (dwarf2_per_objfile->line_buffer + dwarf2_per_objfile->line_size)){
         printf("line number info header doesn't fit in `.debug_line' section\n");
@@ -719,7 +719,7 @@ static struct subfile * dwarf_decode_lines (struct line_header *lh, char *comp_d
             line_ptr += 1;
 
             if (op_code >= lh->opcode_base)
-            {		
+            {
                 /* Special operand.  */
                 adj_opcode = op_code - lh->opcode_base;
                 address += (adj_opcode / lh->line_range)
@@ -924,43 +924,43 @@ static struct subfile * dwarf_decode_lines (struct line_header *lh, char *comp_d
 //
 void free_dwarf2_per_objfile(struct dwarf2_per_objfile *dwarf2_per_objfile){
     if(dwarf2_per_objfile->info_buffer){
-        free(dwarf2_per_objfile->info_buffer); 
+        free(dwarf2_per_objfile->info_buffer);
     }
     if(dwarf2_per_objfile->abbrev_buffer){
-        free(dwarf2_per_objfile->abbrev_buffer); 
+        free(dwarf2_per_objfile->abbrev_buffer);
     }
     if(dwarf2_per_objfile->line_buffer){
-        free(dwarf2_per_objfile->line_buffer); 
+        free(dwarf2_per_objfile->line_buffer);
     }
     if(dwarf2_per_objfile->pubnames_buffer){
-        free(dwarf2_per_objfile->pubnames_buffer); 
+        free(dwarf2_per_objfile->pubnames_buffer);
     }
     if(dwarf2_per_objfile->aranges_buffer){
-        free(dwarf2_per_objfile->aranges_buffer); 
+        free(dwarf2_per_objfile->aranges_buffer);
     }
     if(dwarf2_per_objfile->loc_buffer){
-        free(dwarf2_per_objfile->loc_buffer); 
+        free(dwarf2_per_objfile->loc_buffer);
     }
     if(dwarf2_per_objfile->macinfo_buffer){
-        free(dwarf2_per_objfile->macinfo_buffer); 
+        free(dwarf2_per_objfile->macinfo_buffer);
     }
     if(dwarf2_per_objfile->str_buffer){
-        free(dwarf2_per_objfile->str_buffer); 
+        free(dwarf2_per_objfile->str_buffer);
     }
     if(dwarf2_per_objfile->ranges_buffer){
-        free(dwarf2_per_objfile->ranges_buffer); 
+        free(dwarf2_per_objfile->ranges_buffer);
     }
     if(dwarf2_per_objfile->inlined_buffer){
-        free(dwarf2_per_objfile->inlined_buffer); 
+        free(dwarf2_per_objfile->inlined_buffer);
     }
     if(dwarf2_per_objfile->pubtypes_buffer){
-        free(dwarf2_per_objfile->pubtypes_buffer); 
+        free(dwarf2_per_objfile->pubtypes_buffer);
     }
     if(dwarf2_per_objfile->frame_buffer){
-        free(dwarf2_per_objfile->frame_buffer); 
+        free(dwarf2_per_objfile->frame_buffer);
     }
     if(dwarf2_per_objfile->eh_frame_buffer){
-        free(dwarf2_per_objfile->eh_frame_buffer); 
+        free(dwarf2_per_objfile->eh_frame_buffer);
     }
 
     free(dwarf2_per_objfile);
@@ -1005,7 +1005,7 @@ static struct dwarf2_per_objfile* parse_dwarf_segment(char *macho_str, long offs
         memset(temp, '\0', dwarf_section_headers[i].size);
         memcpy(temp, macho_str + dwarf_section_headers[i].offset, dwarf_section_headers[i].size);
 
-        if(strcmp(dwarf_section_headers[i].sectname, "__debug_abbrev") == 0){ 
+        if(strcmp(dwarf_section_headers[i].sectname, "__debug_abbrev") == 0){
             dwarf2_per_objfile->abbrev_buffer = temp;
             dwarf2_per_objfile->abbrev_size = dwarf_section_headers[i].size;
         }else if(strcmp(dwarf_section_headers[i].sectname, "__debug_aranges") == 0){
@@ -1029,7 +1029,7 @@ static struct dwarf2_per_objfile* parse_dwarf_segment(char *macho_str, long offs
             dwarf2_per_objfile->pubnames_buffer = temp;
             dwarf2_per_objfile->pubnames_size = dwarf_section_headers[i].size;
         }else if((strcmp(dwarf_section_headers[i].sectname, "__debug_pubtypes") == 0) ||
-                (strcmp(dwarf_section_headers[i].sectname, "__debug_pubtypes__DWARF") == 0) 
+                (strcmp(dwarf_section_headers[i].sectname, "__debug_pubtypes__DWARF") == 0)
                 ){
             dwarf2_per_objfile->pubtypes_buffer = temp;
             dwarf2_per_objfile->pubtypes_size = dwarf_section_headers[i].size;
@@ -1049,7 +1049,7 @@ static struct dwarf2_per_objfile* parse_dwarf_segment(char *macho_str, long offs
             //do nothing for now
             free(temp);
         }else if((strcmp(dwarf_section_headers[i].sectname, "__apple_namespa") == 0) ||
-                (strcmp(dwarf_section_headers[i].sectname, "__apple_namespac__DWARF") == 0) 
+                (strcmp(dwarf_section_headers[i].sectname, "__apple_namespac__DWARF") == 0)
                 ){
             //do nothing for now
             free(temp);
@@ -1099,7 +1099,7 @@ static struct dwarf2_per_objfile* parse_dwarf_segment_64(char *macho_str, long o
         memset(temp, '\0', (uint32_t)dwarf_section_headers[i].size);
         memcpy(temp, macho_str + dwarf_section_headers[i].offset, (uint32_t)dwarf_section_headers[i].size);
 
-        if(strcmp(dwarf_section_headers[i].sectname, "__debug_abbrev") == 0){ 
+        if(strcmp(dwarf_section_headers[i].sectname, "__debug_abbrev") == 0){
             dwarf2_per_objfile->abbrev_buffer = temp;
             dwarf2_per_objfile->abbrev_size = (uint32_t)dwarf_section_headers[i].size;
         }else if(strcmp(dwarf_section_headers[i].sectname, "__debug_aranges") == 0){
@@ -1123,7 +1123,7 @@ static struct dwarf2_per_objfile* parse_dwarf_segment_64(char *macho_str, long o
             dwarf2_per_objfile->pubnames_buffer = temp;
             dwarf2_per_objfile->pubnames_size = (uint32_t)dwarf_section_headers[i].size;
         }else if((strcmp(dwarf_section_headers[i].sectname, "__debug_pubtypes") == 0) ||
-                (strcmp(dwarf_section_headers[i].sectname, "__debug_pubtypes__DWARF") == 0) 
+                (strcmp(dwarf_section_headers[i].sectname, "__debug_pubtypes__DWARF") == 0)
                 ){
             dwarf2_per_objfile->pubtypes_buffer = temp;
             dwarf2_per_objfile->pubtypes_size = (uint32_t)dwarf_section_headers[i].size;
@@ -1143,7 +1143,7 @@ static struct dwarf2_per_objfile* parse_dwarf_segment_64(char *macho_str, long o
             //do nothing for now
             free(temp);
         }else if((strcmp(dwarf_section_headers[i].sectname, "__apple_namespa") == 0) ||
-                (strcmp(dwarf_section_headers[i].sectname, "__apple_namespac__DWARF") == 0) 
+                (strcmp(dwarf_section_headers[i].sectname, "__apple_namespac__DWARF") == 0)
                 ){
             //do nothing for now
             free(temp);
@@ -1483,7 +1483,7 @@ struct target_file *parse_file(const char *filename){
     }
 
     //tell file type by their magic number
-    //Values for integer types in all Mach-O data structures are written 
+    //Values for integer types in all Mach-O data structures are written
     //using the host CPU’s byte ordering scheme, except for fat_header and
     //fat_arch, which are written in big-endian byte order.
 
@@ -1500,7 +1500,7 @@ struct target_file *parse_file(const char *filename){
     int parse_result = -1;
     if( (rc = fread(&magic_number, sizeof(uint32_t), 1, fp)) != 0 )
     {
-        seekreturn = fseek (fp, 0 - sizeof(uint32_t), SEEK_CUR); 
+        seekreturn = fseek (fp, 0 - sizeof(uint32_t), SEEK_CUR);
         assert(seekreturn == 0);
         if (seekreturn != 0){
             debug("seekreturn != 0");
@@ -1539,8 +1539,8 @@ struct target_file *parse_file(const char *filename){
                 fprintf(stderr, "magic_number invalid.");
                 PyErr_Format(ATOSError, "magic_number invalid");
         }
-    } 
-    fclose(fp); 
+    }
+    fclose(fp);
     if(parse_result == -1){
         return NULL;
     }
@@ -1629,7 +1629,7 @@ int parse_fat_arch(FILE *fp, struct fat_arch *fa, struct thin_macho**thin_macho,
         return -1;
     }
 
-    return 0; 
+    return 0;
 }
 
 int parse_universal(FILE *fp, uint32_t magic_number, struct target_file *tf){
@@ -1644,8 +1644,8 @@ int parse_universal(FILE *fp, uint32_t magic_number, struct target_file *tf){
         }
         nfat_arch = fh.nfat_arch;
         //printf("nfat_arch: %u\n", nfat_arch);
-    } 
-    //free maloc failed? 
+    }
+    //free maloc failed?
     tf->numofarchs = nfat_arch;
     tf->thin_machos = malloc(nfat_arch *sizeof(struct thin_macho*));
     if (tf->thin_machos == NULL){
@@ -1692,7 +1692,7 @@ int parse_macho(struct thin_macho*tm){
     size_t header_size = 0;
 
     uint32_t magic_number = 0;
-    memcpy(&magic_number, macho_str, sizeof(uint32_t)); 
+    memcpy(&magic_number, macho_str, sizeof(uint32_t));
     //printf("magic_number: %x\n", magic_number);
     switch(magic_number){
         case MH_MAGIC:
@@ -1702,7 +1702,7 @@ int parse_macho(struct thin_macho*tm){
                 //parse_normal(fp, MH_MAGIC, tf);
                 struct mach_header mh = {0};
                 header_size = sizeof(struct mach_header);
-                memcpy(&mh, macho_str + offset, header_size); 
+                memcpy(&mh, macho_str + offset, header_size);
                 num_load_cmds = mh.ncmds;
                 tm->cputype = mh.cputype;
                 tm->cpusubtype = mh.cpusubtype;
@@ -1715,7 +1715,7 @@ int parse_macho(struct thin_macho*tm){
                 //parse_normal(fp, MH_MAGIC_64, tf);
                 struct mach_header_64 mh64 = {0};
                 header_size = sizeof(struct mach_header_64);
-                memcpy(&mh64, macho_str + offset, header_size); 
+                memcpy(&mh64, macho_str + offset, header_size);
                 num_load_cmds = mh64.ncmds;
                 tm->cputype = mh64.cputype;
                 tm->cpusubtype = mh64.cpusubtype;
@@ -1747,11 +1747,11 @@ int parse_macho(struct thin_macho*tm){
 
     offset += header_size;
 
-    struct load_command lc = {0}; 
+    struct load_command lc = {0};
     int i = 0;
     while (i < num_load_cmds){
         memcpy(&lc, macho_str + offset, sizeof(struct load_command));
-        //because we will try to read the actual load_command depend on 
+        //because we will try to read the actual load_command depend on
         //load_command type, so we do not need to add the offset.
         //offset += sizeof(struct load_command);
         //printf("%d\n",i);
@@ -1762,7 +1762,7 @@ int parse_macho(struct thin_macho*tm){
         i++;
     }
     //    printf("finished\n");
-    return 0; 
+    return 0;
 }
 
 /* Return a pointer to just past the end of an LEB128 number in BUF.  */
@@ -2616,11 +2616,11 @@ static struct die_info *find_target_subprogram(struct die_info *die, struct addr
     }
 
     if(die->sibling != NULL){
-        return find_target_subprogram(die->sibling, target_ard, integer_address); 
+        return find_target_subprogram(die->sibling, target_ard, integer_address);
     }
 
     if(die->child != NULL){
-        return find_target_subprogram(die->child, target_ard, integer_address); 
+        return find_target_subprogram(die->child, target_ard, integer_address);
     }
     return NULL;
 
@@ -2669,7 +2669,7 @@ void free_sub_file(struct subfile *subfile){
 void print_thin_macho_aranges(struct thin_macho *thin_macho){
     struct dwarf2_per_objfile* dwarf2_per_objfile = thin_macho->dwarf2_per_objfile;
     unsigned int num = dwarf2_per_objfile->n_aranges;
-    struct arange **all_aranges = dwarf2_per_objfile->all_aranges; 
+    struct arange **all_aranges = dwarf2_per_objfile->all_aranges;
 
     unsigned int i = 0, j = 0;
     for(i = 0; i< num; i++){
@@ -2693,13 +2693,13 @@ static void select_symbol_by_address(struct nlist *symbols, uint32_t nsyms, CORE
          *  greater than the symbol's value, save this symbol. */
         if (!*found_symbol && symbols[i].n_value <= target) {
             *found_symbol = &symbols[i];
-            *offset = target - symbols[i].n_value; 
+            *offset = target - symbols[i].n_value;
             /*  If we have found a symbol already, but if the address we want is
              *  greater than the current symbol's value and the current symbol is later
              *  than the last one found, the current one is a closer match. */
         } else if (*found_symbol && symbols[i].n_value <= target && ((*found_symbol)->n_value < symbols[i].n_value)) {
             *found_symbol = &symbols[i];
-            *offset = target - symbols[i].n_value; 
+            *offset = target - symbols[i].n_value;
         }
     }
 }
@@ -2724,7 +2724,7 @@ int lookup_by_address_in_dwarf(struct thin_macho *thin_macho, CORE_ADDR integer_
     CORE_ADDR address = (CORE_ADDR)integer_address;
     struct dwarf2_per_objfile* dwarf2_per_objfile = thin_macho->dwarf2_per_objfile;
     unsigned int num = dwarf2_per_objfile->n_aranges;
-    struct arange **all_aranges = dwarf2_per_objfile->all_aranges; 
+    struct arange **all_aranges = dwarf2_per_objfile->all_aranges;
     struct arange *target_arange = NULL;
     struct address_range_descriptor *target_ard = NULL;
     unsigned int i = 0, j = 0;
@@ -2753,7 +2753,7 @@ int lookup_by_address_in_dwarf(struct thin_macho *thin_macho, CORE_ADDR integer_
         return -1;
     }
 
-    //find the target compilation unit 
+    //find the target compilation unit
     struct dwarf2_per_cu_data *target_dwarf2_per_cu_data= NULL;
     for (i = 0; i < dwarf2_per_objfile->n_comp_units; i++){
         if (dwarf2_per_objfile->all_comp_units[i]->offset == target_arange->aranges_header.info_offset){
@@ -2821,7 +2821,7 @@ void parse_lc_symtab(char *macho_str, struct symtab_command *command, struct thi
 
 
     tm->all_symbols = malloc(command->nsyms * sizeof(struct nlist));
-    memset(tm->all_symbols, '\0', command->nsyms * sizeof(struct nlist));                                                              
+    memset(tm->all_symbols, '\0', command->nsyms * sizeof(struct nlist));
     memcpy(tm->all_symbols, macho_str + symoff, command->nsyms * sizeof(struct nlist));
     tm->nsyms = nsyms;
 
@@ -2856,13 +2856,13 @@ int parse_dwarf2_per_objfile(struct dwarf2_per_objfile *dwarf2_per_objfile){
 int parse_load_command(char *macho_str, long *offset, struct load_command *lc, struct thin_macho*tm){
     int load_command_result = -1;
     switch (lc->cmd){
-        case LC_UUID: 
+        case LC_UUID:
             load_command_result = process_lc_uuid(macho_str, offset, tm);
             break;
-        case LC_SEGMENT: 
+        case LC_SEGMENT:
             load_command_result = process_lc_segment(macho_str, offset, tm);
             break;
-        case LC_SEGMENT_64: 
+        case LC_SEGMENT_64:
             load_command_result = process_lc_segment_64(macho_str, offset, tm);
             break;
         case LC_SYMTAB:
@@ -3065,7 +3065,7 @@ int process_lc_uuid(char *macho_str, long *offset, struct thin_macho*tm){
         tm->uuid[i] = command.uuid[i];
         i++;
     }
-    return 0; 
+    return 0;
 }
 
 int process_lc_segment(char *macho_str, long *offset, struct thin_macho*tm){
@@ -3083,8 +3083,8 @@ int process_lc_segment(char *macho_str, long *offset, struct thin_macho*tm){
         }
     }
     //in case there are sections, we need to seek the file point to the next load command
-    *offset += command.cmdsize - sizeof(struct segment_command); 
-    return 0; 
+    *offset += command.cmdsize - sizeof(struct segment_command);
+    return 0;
 }
 
 int process_lc_segment_64(char *macho_str, long *offset, struct thin_macho*tm){
@@ -3100,7 +3100,7 @@ int process_lc_segment_64(char *macho_str, long *offset, struct thin_macho*tm){
             return -1;
         }
     }
-    *offset += command.cmdsize - sizeof(struct segment_command_64); 
+    *offset += command.cmdsize - sizeof(struct segment_command_64);
 
     return 0;
 }
@@ -3221,7 +3221,7 @@ int process_lc_dysymtab(char *macho_str, long *offset, struct thin_macho*tm){
 int process_lc_symtab(char *macho_str, long *offset, struct thin_macho*tm){
     struct symtab_command command = {0};
     memcpy(&command, macho_str + *offset, sizeof(struct symtab_command));
-    parse_lc_symtab(macho_str, &command, tm); 
+    parse_lc_symtab(macho_str, &command, tm);
     *offset += command.cmdsize;
     return 0;
 }
