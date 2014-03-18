@@ -1,7 +1,7 @@
 /*
  * =====================================================================================
  *
- *       Filename:  wrapper.c
+ *       Filename:  python_wrapper.c
  *
  *    Description:  python module wrapper
  *
@@ -19,7 +19,7 @@
 
 #include "python_wrapper.h"
 
-PyObject *ATOSError;
+PyObject *ATOSLError;
 static PyObject *
 symbolicate_wrapper(PyObject *self, PyObject *args)
 {
@@ -43,7 +43,7 @@ symbolicate_wrapper(PyObject *self, PyObject *args)
         if (PyString_Check(address_item)){
             addresses[i] = PyString_AsString(address_item);
         }else{
-            PyErr_SetString(ATOSError, "tuple contains a non-string value.");
+            PyErr_SetString(ATOSLError, "tuple contains a non-string value.");
             return NULL;
         }
     }
@@ -57,22 +57,22 @@ symbolicate_wrapper(PyObject *self, PyObject *args)
     return Py_BuildValue("i", result);
 }
 
-static PyMethodDef ATOSMethods[] = {
+static PyMethodDef ATOSLMethods[] = {
     {"symbolicate",  symbolicate_wrapper, METH_VARARGS,
     "binary address to symbol."},
     {NULL, NULL, 0, NULL}        /*  Sentinel */
 };
 
-PyMODINIT_FUNC initatos(void)
+PyMODINIT_FUNC initatosl(void)
 {
     PyObject *m;
 
-    m = Py_InitModule("atos", ATOSMethods);
+    m = Py_InitModule("atosl", ATOSLMethods);
     if (m == NULL)
         return;
 
-    ATOSError = PyErr_NewException("atos.error", NULL, NULL);
-    Py_INCREF(ATOSError);
-    PyModule_AddObject(m, "error", ATOSError);
+    ATOSLError = PyErr_NewException("atosl.error", NULL, NULL);
+    Py_INCREF(ATOSLError);
+    PyModule_AddObject(m, "error", ATOSLError);
 }
 

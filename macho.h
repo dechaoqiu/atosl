@@ -4,7 +4,7 @@
 #ifdef Py_PYTHON_H
 #include "python_wrapper.h"
 #else
-#define ATOSError 0
+#define ATOSLError 0
 #define PyErr_NoMemory()
 #define PyErr_Format(stream, format,...)
 #endif
