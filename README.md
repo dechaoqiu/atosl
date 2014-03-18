@@ -1,7 +1,7 @@
 atosl
 =====
 
-Mach-O File Format Reader
+atosl: atos on linux for converting binary addresses into symbols.
 
 ## INSTALL
 
@@ -10,8 +10,8 @@ Mach-O File Format Reader
 
 ## USAGE
 
-1. atos -arch ARCH -o DWARF_FILE_PATH BINARY_ADDRESS
+1. atosl -arch ARCH -o DWARF_FILE_PATH BINARY_ADDRESS
 
 ## EXAMPLE
 
-1. atos -arch ARMV7S -o ~/TEST 0X00001100
+1. atosl -arch ARMV7S -o ~/TEST 0X00001100
