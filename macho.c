@@ -393,12 +393,12 @@ static long read_initial_length_of_comp_unit (char *buf, struct comp_unit_head *
                 && cu_header->initial_length_size != 4
                 && cu_header->initial_length_size != 8
                 && cu_header->initial_length_size != 12){
-            PyErr_Format(ATOSError, "cu_header->initial_length_size invalid");
+            PyErr_Format(ATOSLError, "cu_header->initial_length_size invalid");
             return -1;
         }
 
         if (cu_header->initial_length_size != 0 && cu_header->initial_length_size != *bytes_read){
-            PyErr_Format(ATOSError, "cu_header->initial_length_size is not equal to bytes_read");
+            PyErr_Format(ATOSLError, "cu_header->initial_length_size is not equal to bytes_read");
             fprintf(stderr, "cu_header->initial_length_size is not equal to bytes_read\n");
             return -1;
         }
@@ -481,7 +481,7 @@ static struct line_header * dwarf_decode_line_header (unsigned int offset, struc
     if (dwarf2_per_objfile->line_buffer == NULL)
     {
         printf("missing .debug_line section\n");
-        PyErr_Format(ATOSError, "missing .debug_line section");
+        PyErr_Format(ATOSLError, "missing .debug_line section");
         return NULL;
     }
 
@@ -491,7 +491,7 @@ static struct line_header * dwarf_decode_line_header (unsigned int offset, struc
     {
         //dwarf2_statement_list_fits_in_line_number_section_complaint ();
         printf(".debug_line incomplete.\n");
-        PyErr_Format(ATOSError, ".debug_line incomplete");
+        PyErr_Format(ATOSLError, ".debug_line incomplete");
         return NULL;
     }
 
@@ -512,7 +512,7 @@ static struct line_header * dwarf_decode_line_header (unsigned int offset, struc
                 + dwarf2_per_objfile->line_size))
     {
         printf(".debug_line incomplete.\n");
-        PyErr_Format(ATOSError, ".debug_line incomplete");
+        PyErr_Format(ATOSLError, ".debug_line incomplete");
         return NULL;
     }
     lh->statement_program_end = line_ptr + lh->total_length;
@@ -568,7 +568,7 @@ static struct line_header * dwarf_decode_line_header (unsigned int offset, struc
 
     if (line_ptr > (dwarf2_per_objfile->line_buffer + dwarf2_per_objfile->line_size)){
         printf("line number info header doesn't fit in `.debug_line' section\n");
-        PyErr_Format(ATOSError, "line number info header doesn't fit in `.debug_line' section");
+        PyErr_Format(ATOSLError, "line number info header doesn't fit in `.debug_line' section");
         return NULL;
     }
 
@@ -1478,7 +1478,7 @@ struct target_file *parse_file(const char *filename){
     FILE *fp = fopen(filename, "rb");
     if (fp == NULL){
         fprintf(stderr, "Can not open file %s for read.\n", filename);
-        PyErr_Format(ATOSError, "Can not open file %s for read\n", filename);
+        PyErr_Format(ATOSLError, "Can not open file %s for read\n", filename);
         return NULL;
     }
 
@@ -1504,7 +1504,7 @@ struct target_file *parse_file(const char *filename){
         assert(seekreturn == 0);
         if (seekreturn != 0){
             debug("seekreturn != 0");
-            PyErr_Format(ATOSError, "seek error");
+            PyErr_Format(ATOSLError, "seek error");
             fclose(fp);
             return NULL;
         }
@@ -1520,12 +1520,12 @@ struct target_file *parse_file(const char *filename){
                 break;
             case MH_CIGAM:
                 printf("MH_CIGAM: %x\n", MH_CIGAM);
-                PyErr_Format(ATOSError, "MH_CIGAM: %x\n", MH_CIGAM);
+                PyErr_Format(ATOSLError, "MH_CIGAM: %x\n", MH_CIGAM);
                 break;
             case MH_CIGAM_64:
                 //current machine endian is not same with host machine
                 printf("MH_CIGAM_64: %x\n", MH_CIGAM_64);
-                PyErr_Format(ATOSError, "MH_CIGAM_64: %x\n", MH_CIGAM_64);
+                PyErr_Format(ATOSLError, "MH_CIGAM_64: %x\n", MH_CIGAM_64);
                 break;
             case FAT_MAGIC:
                 //current machine is big endian
@@ -1537,7 +1537,7 @@ struct target_file *parse_file(const char *filename){
                 break;
             default:
                 fprintf(stderr, "magic_number invalid.");
-                PyErr_Format(ATOSError, "magic_number invalid");
+                PyErr_Format(ATOSLError, "magic_number invalid");
         }
     }
     fclose(fp);
@@ -1608,7 +1608,7 @@ int parse_fat_arch(FILE *fp, struct fat_arch *fa, struct thin_macho**thin_macho,
     seekreturn = fseek(fp, fa->offset, SEEK_SET);
     assert(seekreturn == 0);
     if(seekreturn != 0){
-        PyErr_Format(ATOSError, "seek error");
+        PyErr_Format(ATOSLError, "seek error");
         fprintf(stderr, "seek error.\n");
         return -1;
     }
@@ -1617,14 +1617,14 @@ int parse_fat_arch(FILE *fp, struct fat_arch *fa, struct thin_macho**thin_macho,
     numofbytes = fread((*thin_macho)->data, sizeof(char), fa->size, fp);
     assert(numofbytes == fa->size);
     if(numofbytes != fa->size){
-        PyErr_Format(ATOSError, "read macho data error");
+        PyErr_Format(ATOSLError, "read macho data error");
         fprintf(stderr, "read macho data error.\n");
         return -1;
     }
     seekreturn = fseek(fp, cur_position, SEEK_SET);
     assert(seekreturn == 0);
     if(seekreturn != 0){
-        PyErr_Format(ATOSError, "seek error.");
+        PyErr_Format(ATOSLError, "seek error.");
         fprintf(stderr, "seek error.\n");
         return -1;
     }
@@ -1670,7 +1670,7 @@ int parse_universal(FILE *fp, uint32_t magic_number, struct target_file *tf){
                 return -1;
             }
         }else{
-            PyErr_Format(ATOSError, "fread fat arch error");
+            PyErr_Format(ATOSLError, "fread fat arch error");
             fprintf(stderr, "read fat arch error\n");
             return -1;
         }
@@ -1725,23 +1725,23 @@ int parse_macho(struct thin_macho*tm){
             //current machine endian is not same with host machine
             //printf("MH_CIGAM: %x\n", MH_CIGAM);
             printf("TODO: MH_CIGAM\n");
-            PyErr_Format(ATOSError, "TODO: MH_CIGAM");
+            PyErr_Format(ATOSLError, "TODO: MH_CIGAM");
             break;
         case MH_CIGAM_64:
             printf("TODO: MH_CIGAM_64\n");
-            PyErr_Format(ATOSError, "TODO: MH_CIGAM_64");
+            PyErr_Format(ATOSLError, "TODO: MH_CIGAM_64");
             //current machine endian is not same with host machine
             //printf("MH_CIGAM_64: %x\n", MH_CIGAM_64);
             break;
         case FAT_MAGIC:
         case FAT_CIGAM:
             fprintf(stderr, "fat in fat?\n");
-            PyErr_Format(ATOSError, "fat in fat?");
+            PyErr_Format(ATOSLError, "fat in fat?");
             return -1;
             break;
         default:
             fprintf(stderr, "magic_number invalid");
-            PyErr_Format(ATOSError, "magic_number invalid");
+            PyErr_Format(ATOSLError, "magic_number invalid");
             return -1;
     }
 
@@ -2436,7 +2436,7 @@ static unsigned int get_num_arange_descriptor(char *aranges_ptr, struct arange *
                 break;
             default:
                 fprintf(stderr, "read address length offset: bad switch, signed\n");
-                PyErr_Format(ATOSError, "read address length offset: bad switch, signed");
+                PyErr_Format(ATOSLError, "read address length offset: bad switch, signed");
                 *flag = -1;
                 return 0;
         }
@@ -2500,7 +2500,7 @@ static int parse_dwarf_aranges(struct dwarf2_per_objfile *dwarf2_per_objfile)
         assert(zeros == 0);
         if(zeros != 0){
             fprintf(stderr, "should be 4 additional null bytes.");
-            PyErr_Format(ATOSError, "should be 4 additional null bytes");
+            PyErr_Format(ATOSLError, "should be 4 additional null bytes");
             return -1;
         }
         aranges_ptr += 4;
@@ -2542,7 +2542,7 @@ static int parse_dwarf_aranges(struct dwarf2_per_objfile *dwarf2_per_objfile)
                     break;
                 default:
                     fprintf(stderr, "read address length offset: bad switch, signed\n");
-                    PyErr_Format(ATOSError, "read address length offset: bad switch, signed\n");
+                    PyErr_Format(ATOSLError, "read address length offset: bad switch, signed\n");
                     return -1;
             }
 
@@ -2783,7 +2783,7 @@ int lookup_by_address_in_dwarf(struct thin_macho *thin_macho, CORE_ADDR integer_
     unsigned int offset = get_stmt_list_attribute(target_cu->dies, &flag);
     if(flag == 1){
         fprintf(stderr, "do not have stmt_list attribute\n");
-        PyErr_Format(ATOSError, "do not have stmt_list attribute");
+        PyErr_Format(ATOSLError, "do not have stmt_list attribute");
         return -1;
     }else{
         debug("offset: 0x%08x\n", offset);
