@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -DNORMAL_COMPILE -Wall -c
+CFLAGS = -Wall -c
 LDFLAGS = 
 OFLAG = -o
 LIBS = 

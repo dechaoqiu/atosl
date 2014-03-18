@@ -11,7 +11,7 @@
  *       Compiler:  gcc
  *
  *         Author:  Reno Qiu
- *   Organization:  
+ *   Organization:
  *
  * =====================================================================================
  */
@@ -19,7 +19,7 @@
 #include "converter.h"
 /* Convert a DWARF attribute code into its string name.  */
 
-char* dwarf_attr_name (unsigned int attr)
+const char* dwarf_attr_name (unsigned int attr)
 {
     switch (attr)
     {
@@ -225,7 +225,7 @@ char* dwarf_attr_name (unsigned int attr)
 
 /* Convert a DWARF value form code into its string name.  */
 
-char * dwarf_form_name (unsigned form)
+const char * dwarf_form_name (unsigned form)
 {
     switch (form)
     {
@@ -280,7 +280,7 @@ char * dwarf_form_name (unsigned form)
 
 /* Convert a DIE tag into its string name.  */
 
-char * dwarf_tag_name (unsigned tag)
+const char * dwarf_tag_name (unsigned tag)
 {
     switch (tag)
     {
@@ -408,5 +408,4 @@ char * dwarf_tag_name (unsigned tag)
             return "DW_TAG_<unknown>";
     }
 }
-
 

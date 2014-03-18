@@ -1,18 +1,12 @@
 #ifndef MACHO_H
 #define MACHO_H
 
-#ifdef NORMAL_COMPILE
-#define PyErr_NoMemory()
-#define PyErr_Format(stream, format,...)
-#endif
-
-#ifdef RUBY_H
-#define PyErr_NoMemory()
-#define PyErr_Format(stream, format,...)
-#endif
-
 #ifdef Py_PYTHON_H
 #include "python_wrapper.h"
+#else
+#define ATOSError 0
+#define PyErr_NoMemory()
+#define PyErr_Format(stream, format,...)
 #endif
 
 #include <stdio.h>

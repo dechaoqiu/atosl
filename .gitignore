@@ -1,7 +1,7 @@
 # Object files
 *.o
 ctags
-UIKit
+.DS_Store
 atos
 atosl
 debug_atos
