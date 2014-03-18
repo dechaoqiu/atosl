@@ -17,6 +17,7 @@
  */
 #include <stdio.h>
 #include "macho.h"
+#include <ruby.h>
 
 extern char *project_name;
 
@@ -100,6 +101,37 @@ int symbolicate(const char* arch, const char *executable, char *addresses[], int
     numeric_to_symbols(thin_macho, (const char **)addresses, numofaddresses);
     free_target_file(tf);
     return 0;
+}
+
+// Initial setup function, takes no arguments and returns nothing. Some API
+// notes:
+//
+// * rb_define_module() creates and returns a top-level module by name
+//
+// * rb_define_module_under() takes a module and a name, and creates a new
+//   module within the given one
+//
+// * rb_define_singleton_method() take a module, the method name, a reference to
+//   a C function, and the method's arity, and exposes the C function as a
+//   single method on the given module
+VALUE Atosl;
+
+VALUE symbolicate_wrapper(VALUE self, VALUE arch, VALUE executable, VALUE addresses){
+    int numofaddresses = RARRAY_LEN(addresses);
+    char *arch_str = RSTRING_PTR(StringValue(arch));
+    char *executable_str = RSTRING_PTR(StringValue(executable));
+    char **addresses_array = malloc(numofaddresses * sizeof(char *));
+    for (int i = 0; i < numofaddresses; i++){
+        VALUE ret = rb_ary_entry(addresses, i);
+        addresses_array[i] = RSTRING_PTR(StringValue(ret));
+    }
+    int result = symbolicate(arch_str, executable_str, addresses_array, numofaddresses);
+    free(addresses_array);
+    return INT2NUM(result);
+}
+void Init_atosl(){
+    Atosl = rb_define_module("Atosl");
+    rb_define_singleton_method(Atosl, "symbolicate", symbolicate_wrapper, 3);
 }
 
 int main(int argc, char *argv[]){
