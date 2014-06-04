@@ -1325,8 +1325,9 @@ void free_dwarf_abbrev_hash(struct dwarf2_per_objfile *dwarf2_per_objfile){
         struct abbrev_info *dwarf2_abbrevs= dwarf2_per_objfile->dwarf2_abbrevs[i];
         struct abbrev_info *current = dwarf2_abbrevs;
         while(current != NULL){
-            current = current->next;
+            struct abbrev_info *current_next = current->next;
             free(current);
+            current = current_next;
         }
         i++;
     }
